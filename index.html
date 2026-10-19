@@ -670,7 +670,7 @@ body.admin-on .pcard{ border-radius:var(--r-lg); }
   --sans:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;
   --r-xs:0px; --r:0px; --r-lg:0px;
   --mq-l:#8c919c; --mq-e:#3a404e;
-  --stone:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.008 .013' numOctaves='5' seed='17' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .52 0 0 0 0 .72 0 0 0 .75 -.3'/%3E%3C/filter%3E%3Cfilter id='g'%3E%3CfeTurbulence type='turbulence' baseFrequency='.022' numOctaves='3' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .8 0 0 0 0 .78 0 0 0 0 .7 0 0 0 -2.6 .5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.35'/%3E%3C/svg%3E");
+  --stone:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.008 .013' numOctaves='5' seed='17' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .52 0 0 0 0 .72 0 0 0 .75 -.3'/%3E%3C/filter%3E%3Cfilter id='g'%3E%3CfeTurbulence type='turbulence' baseFrequency='.022' numOctaves='3' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .8 0 0 0 0 .78 0 0 0 0 .7 0 0 0 -2.6 .5'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.35'/%3E%3C/svg%3E");
 }
 :root[data-theme="light"]{
   --bg:#E3E5E9; --card:#EEF0F3; --card2:#D8DCE3; --text:#0B1528; --muted:#4B5567;
@@ -680,7 +680,7 @@ body.admin-on .pcard{ border-radius:var(--r-lg); }
 }
 body{ font-weight:400; }
 /* фактура камня на весь экран: неподвижный слой, клики проходят сквозь */
-body::before{ content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:var(--stone); background-size:560px; opacity:.34; }
+body::before{ content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; background-image:var(--stone); background-size:cover; background-repeat:no-repeat; background-position:center; opacity:.34; }
 :root[data-theme="light"] body::before{ opacity:.28; filter:invert(1) hue-rotate(180deg); }
 ::selection{ background:var(--amber); color:var(--ink); }
 :focus-visible{ outline:2px solid var(--amber); outline-offset:3px; }
@@ -931,7 +931,7 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-19.1';
+var LION_BUILD='2026-10-19.2';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
