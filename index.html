@@ -875,6 +875,10 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 .cut-prev canvas{ max-width:100%; max-height:258px; touch-action:none; cursor:crosshair; }
 .cut-brush .adm-mini.on{ background:var(--amber); border-color:var(--amber); color:var(--ink,#0A1222); }
 .cut-bl{ font-size:.78rem; color:var(--muted); }
+.cut-h{ font-size:.66rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.cut-prev img{ max-width:100%; max-height:258px; object-fit:contain; }
+.cut-card{ display:flex; gap:9px; align-items:center; font-size:.8rem; color:var(--muted); cursor:pointer; }
+.cut-card input{ accent-color:var(--amber); width:16px; height:16px; }
 .cut-msg{ font-size:.8rem; color:var(--muted); line-height:1.5; }
 .cut-row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .cut-tol{ display:flex; gap:10px; align-items:center; font-size:.78rem; color:var(--muted); flex:1; min-width:200px; }
@@ -933,7 +937,7 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-19.4';
+var LION_BUILD='2026-10-19.5';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -2172,7 +2176,7 @@ const cutoutImg = u => typeof u==='string' && !cutImg(u) && (/^data:image\/(png|
 function applyMeta(list){
   list.forEach(p=>{
     p.layer=null; p.tryOn=null; p.tryThumb=null; p.tryFit=false;
-    const own=(p.images||[])[0], fl=tryLayerOf(p), dm=p.tryLayer==='none'?null:FIT.demo(p.id);
+    const own=(p.tryImg && cutoutImg(p.tryImg)) ? p.tryImg : (p.images||[])[0], fl=tryLayerOf(p), dm=p.tryLayer==='none'?null:FIT.demo(p.id);
     if(fl && cutoutImg(own) && !FIT_BAD.has(own)){ p.layer=fl; p.tryOn=own; p.tryThumb=own; p.tryFit=true; }      // своё фото вещи на прозрачном фоне
     else if(dm){ p.layer=dm.layer; p.tryOn=dm.src; p.tryThumb=dm.thumb; p.tryFit=false; }                       // встроенный рисунок-демо
     if(!p.specs) p.specs = DEFAULT_SPECS[p.id] ? clone(DEFAULT_SPECS[p.id]) : [];
@@ -2806,10 +2810,10 @@ function editProduct(id){
       <label class="filepick" style="margin-top:9px"><input type="file" accept="image/*" hidden onchange="pickImg(this,'f_img1')">Загрузить фото</label>
       <div class="cut-box" id="cut_f_img1"></div></div>
     <div class="fld"><label>Фото 2 (при наведении): ссылка</label><input class="inp" id="f_img2" value="${esc(imgField('f_img2',p.images[1]))}" placeholder="https://...">
-      <label class="filepick" style="margin-top:9px"><input type="file" accept="image/*" hidden onchange="pickImg(this,'f_img2')">Загрузить фото</label>
-      <div class="cut-box" id="cut_f_img2"></div></div>
+      <label class="filepick" style="margin-top:9px"><input type="file" accept="image/*" hidden onchange="pickImg(this,'f_img2')">Загрузить фото</label></div>
     ${fitEdHTML(p)}`;
-  fitEdRefresh();
+  TRY_IMG = p.tryImg || ''; delete CUT_SRC.f_img1;
+  fitEdRefresh(); cutIdle();
   $('#formSave').textContent='Сохранить';
   $('#formSave').onclick=saveProductForm;
   $('#formModal').classList.add('open'); document.body.classList.add('lock');
@@ -2846,7 +2850,7 @@ function fitEdReset(){
 function fitEdRefresh(){
   if(!$('#fitEd')) return;
   FE_SL.forEach(([k])=>{ const el=$('#fe_'+k); $('#fe_'+k+'_v').textContent=' '+el.value+el.dataset.u; });
-  const sel=$('#f_layer').value, img=imgVal('f_img1');
+  const sel=$('#f_layer').value, img=TRY_IMG||imgVal('f_img1');
   const layer = sel==='none' ? null : (sel || fitLayer({category:$('#f_cat').value, name:$('#f_name').value}));
   const dm = sel==='none' ? null : FIT.demo(editingId);
   const pr=$('#f_pair'); if(pr) pr.style.display = layer==='shoes' ? '' : 'none';
@@ -2857,15 +2861,15 @@ function fitEdRefresh(){
   if(!layer){ lock(true); msg('По категории не понять, куда надевать вещь. Выберите вариант в списке выше.'); return; }
   if(!img || !cutoutImg(img)){
     lock(true);
-    if(dm){ FIT.plain($('#fe-'+dm.layer),dm.src); msg('Сейчас в примерочной рисунок-образец. Загрузите главное фото вещи <b>без фона (PNG)</b>, и надеваться будет оно.'); }
-    else msg('Для примерки нужно главное фото вещи <b>без фона</b> (PNG). С обычным фото вещь в примерочной не показывается.');
+    if(dm){ FIT.plain($('#fe-'+dm.layer),dm.src); msg('Сейчас в примерочной рисунок-образец. Загрузите главное фото вещи или нажмите «Подготовить фото для примерочной» выше: сайт сделает копию без фона и наденет её.'); }
+    else msg('Загрузите главное фото вещи или нажмите «Подготовить фото для примерочной» выше: сайт сам сделает копию без фона.');
     return;
   }
   lock(false); msg('Подгоняем…');
   const fit=fitEdValues()||{};
   FIT.wear($('#fe-'+layer),img,layer,fit).then(r=>{
     if(!$('#fitEd')) return;
-    if(!r){ lock(true); msg('У этого фото есть фон, поэтому на манекен его не надеть. Загрузите фото вещи <b>без фона</b> (PNG).'); return; }
+    if(!r){ lock(true); msg('Фон с этого фото не убрался. Поправьте копию для примерочной выше (сила обрезки или кисть) или загрузите другое фото.'); return; }
     if($('#fe_t').dataset.auto){ $('#fe_t').value=Math.round(r.auto*100); $('#fe_t_v').textContent=' '+$('#fe_t').value+'%'; }
     msg('Двигайте ползунки, пока вещь не сядет ровно. Если на фото видно лицо, ноги или соседних людей, срежьте их ползунками «Обрезать».');
   });
@@ -2894,21 +2898,46 @@ function pickImg(input,targetId){
       let alpha=false;
       try{ const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;
         for(let i=3;i<d.length;i+=64){ if(d[i]<250){ alpha=true; break; } } }catch(e){}
-      let out=c.toDataURL('image/webp',alpha?.9:.82);        // webp хранит и прозрачный фон
-      if(out.indexOf('data:image/webp')!==0) out = alpha ? c.toDataURL('image/png') : c.toDataURL('image/jpeg',.85);
+      // фото с прозрачным фоном храним в webp/png, обычное фото — в jpeg (так сразу видно, что фон у него есть)
+      let out = alpha ? c.toDataURL('image/webp',.9) : c.toDataURL('image/jpeg',.86);
+      if(alpha && out.indexOf('data:image/webp')!==0) out=c.toDataURL('image/png');
       if(out.length>r.result.length && r.result.length<1500000) out=r.result;   // маленький файл оставляем как есть
       IMG_BUF[targetId]=out; $('#'+targetId).value=IMG_MARK;
-      if(targetId==='f_img1' || targetId==='f_img2'){ CUT_SRC[targetId]={canvas:c, orig:out, tol:50, off:false}; cutApply(targetId); return; }
+      if(targetId==='f_img1'){ CUT_SRC.f_img1={canvas:c, orig:out, tol:50, off:false, card:false}; cutApply('f_img1'); return; }
       toast('Фото загружено');
     };
     im.src=r.result;
   };
   r.readAsDataURL(file); input.value='';
 }
-/* ===== Автоматическое удаление фона у фото товара =====
-   После загрузки фото нейросеть сама находит вещь и убирает фон (без интернета работает запасной способ).
-   Админ видит результат на «шахматке», может поменять силу обрезки, подправить кистью или вернуть исходное фото. */
+/* ===== Фото для примерочной: копия главного фото без фона =====
+   В карточке товара остаётся загруженное фото как есть. Для примерочной нейросеть сама делает копию без фона
+   (без интернета работает запасной способ), и её примерочная сажает по фигуре манекена.
+   Админ видит копию на «шахматке», может поменять силу обрезки, подправить кистью или не использовать её. */
 const CUT_SRC={};
+let TRY_IMG='';                                          // копия без фона для примерочной (поле товара tryImg)
+function setImg1(v){ if(String(v).indexOf('data:')===0){ IMG_BUF.f_img1=v; $('#f_img1').value=IMG_MARK; } else { delete IMG_BUF.f_img1; $('#f_img1').value=v||''; } }
+/* без новой загрузки: показываем, что есть, и даём сделать копию из текущего главного фото */
+function cutIdle(){
+  const box=$('#cut_f_img1'); if(!box) return;
+  box.innerHTML = TRY_IMG
+    ? `<div class="cut-h">Для примерочной</div><div class="cut-prev"><img src="${esc(TRY_IMG)}" alt="Копия без фона"></div>
+       <div class="cut-msg">Копия без фона для примерочной. В карточке показывается главное фото.</div>
+       <div class="cut-row"><button type="button" class="adm-mini" onclick="cutFromCurrent()">Сделать заново из фото 1</button>
+       <button type="button" class="adm-mini" onclick="TRY_IMG='';cutIdle();fitEdRefresh()">Не использовать</button></div>`
+    : (imgVal('f_img1') && !cutoutImg(imgVal('f_img1')) ? `<div class="cut-row"><button type="button" class="adm-mini" onclick="cutFromCurrent()">Подготовить фото для примерочной</button></div>` : '');
+}
+function cutFromCurrent(){
+  const src=imgVal('f_img1'); if(!src){ toast('Сначала добавьте главное фото'); return; }
+  const im=new Image();
+  im.onload=()=>{ const k=Math.min(1,1200/Math.max(im.naturalWidth,im.naturalHeight)), c=document.createElement('canvas');
+    c.width=Math.round(im.naturalWidth*k); c.height=Math.round(im.naturalHeight*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    try{ c.getContext('2d').getImageData(0,0,1,1); }catch(e){ toast('Это фото с другого сайта, его не обработать. Загрузите его файлом.'); return; }
+    CUT_SRC.f_img1={canvas:c, orig:src, tol:50, off:false, card:false}; cutApply('f_img1'); };
+  im.onerror=()=>toast('Не получилось открыть фото. Загрузите его файлом.');
+  if(src.indexOf('data:')!==0) im.crossOrigin='anonymous';
+  im.src=src;
+}
 async function cutApply(id){
   const st=CUT_SRC[id], box=$('#cut_'+id); if(!st || !box) return;
   if(!st.off && !st.q && !st.noML){
@@ -2924,13 +2953,14 @@ async function cutApply(id){
   st.cut = r.ok && !st.off;
   st.work=document.createElement('canvas'); st.work.width=st.canvas.width; st.work.height=st.canvas.height;
   st.work.getContext('2d').drawImage(st.cut ? r.canvas : st.canvas,0,0);
-  const msg = st.off ? 'Оставлено исходное фото, с фоном.'
-    : st.cut ? 'Фон убран автоматически. Если осталось лишнее или задело вещь, поменяйте силу обрезки или поправьте кистью прямо на фото.'
-    : (r.reason+' Сохранено исходное фото.');
-  box.innerHTML=`<div class="cut-prev"><canvas id="cutc_${id}" aria-label="Результат"></canvas></div>
+  const msg = st.off ? 'Примерочная не использует это фото.'
+    : st.cut ? 'Для примерочной сделана копия без фона, а в карточке остаётся ваше фото. Если осталось лишнее или задело вещь, поменяйте силу обрезки или поправьте кистью прямо на фото.'
+    : (r.reason+' В примерочной будет показан рисунок вещи.');
+  box.innerHTML=`<div class="cut-h">Для примерочной</div><div class="cut-prev"><canvas id="cutc_${id}" aria-label="Результат"></canvas></div>
     <div class="cut-msg">${esc(msg)}</div>
     <div class="cut-row">${st.off?'':`<label class="cut-tol">Сила обрезки <input type="range" min="0" max="100" step="5" value="${st.tol}" onchange="CUT_SRC['${id}'].tol=+this.value;cutApply('${id}')"></label>`}
-      <button type="button" class="adm-mini" onclick="CUT_SRC['${id}'].off=!CUT_SRC['${id}'].off;cutApply('${id}')">${st.off?'Убрать фон':'Вернуть как было'}</button></div>
+      <button type="button" class="adm-mini" onclick="CUT_SRC['${id}'].off=!CUT_SRC['${id}'].off;cutApply('${id}')">${st.off?'Сделать копию без фона':'Не использовать'}</button></div>
+    ${st.cut?`<label class="cut-card"><input type="checkbox"${st.card?' checked':''} onchange="CUT_SRC['${id}'].card=this.checked;cutSave('${id}')"> В карточке товара тоже показывать без фона</label>`:''}
     ${st.cut?`<div class="cut-row cut-brush"><span class="cut-bl">Кисть</span>
       <button type="button" class="adm-mini${st.mode!=='keep'?' on':''}" onclick="cutMode('${id}','erase',this)">Стереть фон</button>
       <button type="button" class="adm-mini${st.mode==='keep'?' on':''}" onclick="cutMode('${id}','keep',this)">Вернуть вещь</button>
@@ -2945,11 +2975,12 @@ function cutDraw(id){
 }
 function cutSave(id,first){
   const st=CUT_SRC[id]; if(!st) return;
-  let out=st.orig;
-  if(st.cut){ out=st.work.toDataURL('image/webp',.9); if(out.indexOf('data:image/webp')!==0) out=st.work.toDataURL('image/png'); }
-  IMG_BUF[id]=out; $('#'+id).value=IMG_MARK;
-  if(first) toast(st.cut ? 'Фото загружено, фон убран' : 'Фото загружено');
-  if(id==='f_img1') fitEdRefresh();
+  let cut='';
+  if(st.cut){ cut=st.work.toDataURL('image/webp',.9); if(cut.indexOf('data:image/webp')!==0) cut=st.work.toDataURL('image/png'); }
+  TRY_IMG=cut;                                                     // копия для примерочной
+  setImg1(st.card && cut ? cut : st.orig);                         // в карточке: своё фото (или без фона, если отмечено)
+  if(first) toast(st.cut ? 'Фото загружено, копия без фона для примерочной готова' : 'Фото загружено');
+  fitEdRefresh();
 }
 /* кисть: «Стереть фон» делает пиксели прозрачными, «Вернуть вещь» возвращает их с исходного фото */
 function cutBind(id){
@@ -2994,6 +3025,7 @@ function saveProductForm(){
     where: (()=>{ const w=[...$('#f_where').querySelectorAll('.chk.on')].map(x=>x.dataset.w); return w.length?w:BRANCH_IDS.slice(); })()
   };
   const tl=$('#f_layer').value; if(tl) obj.tryLayer=tl;
+  if(TRY_IMG) obj.tryImg=TRY_IMG;
   const fit=fitEdValues(); if(fit) obj.fit=fit;
   confirmAction(editingId?`Сохранить изменения в карточке «${name}»?`:`Добавить товар «${name}»?`, ()=>{
     const list=DB.products();
@@ -3207,7 +3239,8 @@ async function publishDB(){
       const path='images/p/'+name+'-'+stamp+'.'+(m[1]==='jpeg'?'jpg':m[1]); blobs.push({path,b64:m[2]}); done.set(u,path); return path;
     };
     products.forEach(p=>{ const sid=String(p.id).replace(/[^a-z0-9_-]/gi,'');
-      p.images=(p.images||[]).map((u,i)=>(!u||u===PLACEHOLDER||EXT_DEMO.test(u))?'':toFile(u,sid+'-'+(i+1))); });
+      p.images=(p.images||[]).map((u,i)=>(!u||u===PLACEHOLDER||EXT_DEMO.test(u))?'':toFile(u,sid+'-'+(i+1)));
+      if(p.tryImg) p.tryImg=toFile(p.tryImg,sid+'-try'); });
     store.hero=toFile(store.hero,'hero');
     const db={_v:2,_rev:Date.now(),_date:new Date().toISOString(),products,categories,store};
     const br=encodeURIComponent(g.branch||'main');
