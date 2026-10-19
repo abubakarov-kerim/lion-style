@@ -1,0 +1,518 @@
+{
+ "_v": 2,
+ "_rev": 1,
+ "_date": "2026-10-19T22:14:44.730Z",
+ "products": [
+  {
+   "id": "lion-tee",
+   "name": "Футболка Lion Black",
+   "category": "Футболки",
+   "description": "Плотный хлопок, прямой силуэт, золотая вышивка на груди.",
+   "price": 3900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Чёрный",
+    "Тёмно-синий",
+    "Белый"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": true,
+   "newArrival": true,
+   "sale": false
+  },
+  {
+   "id": "tee-white",
+   "name": "Футболка базовая белая",
+   "category": "Футболки",
+   "description": "Мягкий хлопок, ровный ворот, держит форму после стирки.",
+   "price": 2900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Белый",
+    "Чёрный",
+    "Серый"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL",
+    "3XL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1,
+    "3XL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": false,
+   "newArrival": false,
+   "sale": false
+  },
+  {
+   "id": "shirt-black",
+   "name": "Рубашка классическая чёрная",
+   "category": "Рубашки",
+   "description": "Приталенный крой, плотный хлопок, не мнётся за день.",
+   "price": 5900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Чёрный",
+    "Тёмно-синий"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": true,
+   "newArrival": true,
+   "sale": false
+  },
+  {
+   "id": "shirt-white",
+   "name": "Рубашка классическая белая",
+   "category": "Рубашки",
+   "description": "Белая рубашка под костюм и на каждый день.",
+   "price": 5900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Белый"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "grozny"
+   ],
+   "featured": false,
+   "newArrival": false,
+   "sale": false
+  },
+  {
+   "id": "polo-navy",
+   "name": "Поло тёмно-синее",
+   "category": "Поло и джемперы",
+   "description": "Трикотаж пике, воротник держит форму.",
+   "price": 4500,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Тёмно-синий",
+    "Чёрный",
+    "Белый"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": false,
+   "newArrival": true,
+   "sale": false
+  },
+  {
+   "id": "knit-navy",
+   "name": "Джемпер вязаный",
+   "category": "Поло и джемперы",
+   "description": "Тёплый джемпер с рельефной вязкой и плотной резинкой.",
+   "price": 7900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Тёмно-синий",
+    "Серый",
+    "Чёрный"
+   ],
+   "sizes": [
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "shali"
+   ],
+   "featured": false,
+   "newArrival": false,
+   "sale": false
+  },
+  {
+   "id": "jacket-leather",
+   "name": "Куртка кожаная",
+   "category": "Куртки и худи",
+   "description": "Натуральная кожа, молния, строгий силуэт.",
+   "price": 18900,
+   "oldPrice": 21900,
+   "images": [],
+   "colors": [
+    "Чёрный",
+    "Коричневый"
+   ],
+   "sizes": [
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": true,
+   "newArrival": false,
+   "sale": true
+  },
+  {
+   "id": "hoodie-zip",
+   "name": "Худи на молнии",
+   "category": "Куртки и худи",
+   "description": "Плотный футер с начёсом, капюшон, удобные карманы.",
+   "price": 6900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Серый",
+    "Чёрный",
+    "Тёмно-синий"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": false,
+   "newArrival": true,
+   "sale": false
+  },
+  {
+   "id": "pants-classic",
+   "name": "Брюки классические",
+   "category": "Брюки",
+   "description": "Строгие брюки со стрелками, посадка по талии.",
+   "price": 6900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Чёрный",
+    "Тёмно-синий",
+    "Серый"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": true,
+   "newArrival": false,
+   "sale": false
+  },
+  {
+   "id": "cargo-khaki",
+   "name": "Брюки карго",
+   "category": "Брюки",
+   "description": "Прочный хлопок, накладные карманы, свободный крой.",
+   "price": 5900,
+   "oldPrice": 7400,
+   "images": [],
+   "colors": [
+    "Хаки",
+    "Чёрный"
+   ],
+   "sizes": [
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "shali"
+   ],
+   "featured": false,
+   "newArrival": false,
+   "sale": true
+  },
+  {
+   "id": "jeans-straight",
+   "name": "Джинсы прямые",
+   "category": "Джинсы",
+   "description": "Плотный деним, прямой крой, классическая посадка.",
+   "price": 7400,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Тёмно-синий",
+    "Чёрный"
+   ],
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "stock": {
+    "S": 1,
+    "M": 1,
+    "L": 1,
+    "XL": 1,
+    "XXL": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": false,
+   "newArrival": true,
+   "sale": false
+  },
+  {
+   "id": "shoes-classic",
+   "name": "Туфли кожаные",
+   "category": "Обувь",
+   "description": "Натуральная кожа, строгий нос, мягкая стелька.",
+   "price": 12900,
+   "oldPrice": null,
+   "images": [],
+   "colors": [
+    "Чёрный",
+    "Коричневый"
+   ],
+   "sizes": [
+    "40",
+    "41",
+    "42",
+    "43",
+    "44",
+    "45"
+   ],
+   "stock": {
+    "40": 1,
+    "41": 1,
+    "42": 1,
+    "43": 1,
+    "44": 1,
+    "45": 1
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": true,
+   "newArrival": false,
+   "sale": false
+  },
+  {
+   "id": "sneak-white",
+   "name": "Кроссовки кожаные белые",
+   "category": "Обувь",
+   "description": "Гладкая кожа, лёгкая подошва, золотая деталь на пятке.",
+   "price": 9900,
+   "oldPrice": 11900,
+   "images": [],
+   "colors": [
+    "Белый",
+    "Чёрный"
+   ],
+   "sizes": [
+    "40",
+    "41",
+    "42",
+    "43",
+    "44",
+    "45"
+   ],
+   "stock": {
+    "40": 1,
+    "41": 1,
+    "42": 1,
+    "43": 1,
+    "44": 1,
+    "45": 0
+   },
+   "where": [
+    "grozny",
+    "shali"
+   ],
+   "featured": false,
+   "newArrival": true,
+   "sale": true
+  }
+ ],
+ "categories": [
+  "Футболки",
+  "Рубашки",
+  "Поло и джемперы",
+  "Куртки и худи",
+  "Брюки",
+  "Джинсы",
+  "Обувь"
+ ],
+ "store": {
+  "name": "Lion Style",
+  "tagline": "Мужская одежда и обувь",
+  "about": "Мужская одежда и обувь в Грозном и Шали. Классика, кэжуал и обувь, которые подчёркивают характер.",
+  "seller": "",
+  "inn": "",
+  "delivery": "Заберите заказ в нашем магазине в Грозном или Шали. Если нужна доставка, менеджер согласует её в переписке.",
+  "currency": "₽",
+  "hero": "",
+  "branches": [
+   {
+    "id": "grozny",
+    "city": "Грозный",
+    "address": "",
+    "hours": "",
+    "telegram": "",
+    "whatsapp": "",
+    "instagram": "lion_style_grozny"
+   },
+   {
+    "id": "shali",
+    "city": "Шали",
+    "address": "",
+    "hours": "",
+    "telegram": "",
+    "whatsapp": "",
+    "instagram": "lion_style_shali"
+   }
+  ],
+  "looks": [
+   {
+    "id": "lk1",
+    "name": "Классика",
+    "items": [
+     "shirt-white",
+     "pants-classic",
+     "shoes-classic"
+    ]
+   },
+   {
+    "id": "lk2",
+    "name": "Город",
+    "items": [
+     "lion-tee",
+     "jeans-straight",
+     "sneak-white"
+    ]
+   },
+   {
+    "id": "lk3",
+    "name": "Вечер",
+    "items": [
+     "shirt-black",
+     "jacket-leather",
+     "pants-classic",
+     "shoes-classic"
+    ]
+   }
+  ]
+ }
+}
