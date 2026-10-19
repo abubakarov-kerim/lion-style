@@ -870,9 +870,11 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 .thumbs img.illus,.citem img.illus,.adm-row img.illus{ object-fit:contain; padding:6px; background:var(--card2); }
 .cut-box:empty{ display:none; }
 .cut-box{ margin-top:12px; display:grid; gap:10px; }
-.cut-prev{ position:relative; height:240px; border:1px solid var(--line); overflow:hidden;
+.cut-prev{ position:relative; height:280px; border:1px solid var(--line); overflow:hidden; display:grid; place-items:center; padding:10px;
   background:repeating-conic-gradient(rgba(128,128,128,.22) 0 25%, transparent 0 50%) 0 0/18px 18px; }
-.cut-prev img{ position:absolute; inset:10px; width:calc(100% - 20px); height:calc(100% - 20px); max-width:none; object-fit:contain; }
+.cut-prev canvas{ max-width:100%; max-height:258px; touch-action:none; cursor:crosshair; }
+.cut-brush .adm-mini.on{ background:var(--amber); border-color:var(--amber); color:var(--ink,#0A1222); }
+.cut-bl{ font-size:.78rem; color:var(--muted); }
 .cut-msg{ font-size:.8rem; color:var(--muted); line-height:1.5; }
 .cut-row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .cut-tol{ display:flex; gap:10px; align-items:center; font-size:.78rem; color:var(--muted); flex:1; min-width:200px; }
@@ -931,7 +933,7 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-19.2';
+var LION_BUILD='2026-10-19.3';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -1428,6 +1430,10 @@ const FIT = (function(){
         }
         let big=0; for(let i=1;i<size.length;i++) if(size[i]>big) big=size[i];
         const parts=size.filter((s,i)=>i&&s>=big*.3).length;                           // сколько крупных кусков (пара обуви = 2)
+        const bb={};                                                                   // рамки крупных кусков
+        for(let i=0;i<N;i++){ const l=lab[i]; if(!l||size[l]<big*.3) continue; const px=i%w, py=(i-px)/w;
+          const q=bb[l]||(bb[l]={l,n:size[l],x0:px,y0:py,x1:px,y1:py}); if(px<q.x0)q.x0=px; if(px>q.x1)q.x1=px; if(py<q.y0)q.y0=py; if(py>q.y1)q.y1=py; }
+        const comps=Object.values(bb).sort((p,q)=>q.n-p.n).slice(0,2);
         let x0=w,y0=h,x1=-1,y1=-1;
         for(let i=0;i<N;i++){
           if(!A[i]) continue;
@@ -1437,7 +1443,7 @@ const FIT = (function(){
         }
         if(x1<0) return res({ok:false});
         x.putImageData(img,0,0);
-        res({ok:true,c,d,w,h,x0,y0,x1,y1,A,parts});
+        res({ok:true,c,d,w,h,x0,y0,x1,y1,A,parts,lab,comps});
       };
       im.src=url;
     });
@@ -1517,21 +1523,44 @@ const FIT = (function(){
     const mid=rs=>{ let best=null,bd=1e9; for(const r of rs){ const dd=r[0]<=cx&&r[1]>=cx?0:Math.min(Math.abs(r[0]-cx),Math.abs(r[1]-cx)); if(dd<bd){bd=dd;best=r;} } return best; };
     const wb=[]; for(let y=c.y0+Math.round(ch*.55);y<=c.y0+Math.round(ch*.92);y++){ const m=mid(R[y-c.y0]); if(m) wb.push(m[1]-m[0]+1); }
     const Wb=median(wb)||(c.x1-c.x0+1);
-    let ya=-1; for(let y=c.y0+Math.round(ch*.12);y<=c.y1;y++){ const m=mid(R[y-c.y0]); if(m && m[1]-m[0]+1<=Wb*1.12){ ya=y; break; } }
-    if(ya<0) ya=c.y0+Math.round(ch*.3);
+    // линия плеч: первая строка, где вещь уже широкая. Всё, что выше и заметно по высоте, это капюшон
+    const top45=c.y0+Math.round(ch*.45);
+    let ykt=1; for(let y=c.y0;y<=top45;y++){ const r=R[y-c.y0]; if(r.length) ykt=Math.max(ykt,r[r.length-1][1]-r[0][0]+1); }
+    let ys=c.y0; for(let y=c.y0;y<=top45;y++){ const r=R[y-c.y0]; if(r.length && r[r.length-1][1]-r[0][0]+1>=ykt*.55){ ys=y; break; } }
+    const hood = ys-c.y0 > ch*.13, yb = hood ? ys : c.y0, bh=c.y1-yb+1;
+    let ya=-1; for(let y=yb+Math.round(bh*.12);y<=c.y1;y++){ const m=mid(R[y-c.y0]); if(m && m[1]-m[0]+1<=Wb*1.12){ ya=y; break; } }
+    if(ya<0) ya=yb+Math.round(bh*.3);
     const chest=(M.torso(205)[1]-M.torso(205)[0])*(out?1.13:1.05)*sc, k=chest/Wb;
     const Yt=(out?100:106)+(+fit.y||0), dx=+fit.x||0;
-    const YA=Math.min(188,Math.max(150,Yt+(ya-c.y0)*k)), Yh=Math.min(out?420:372,YA+(c.y1-ya)*k);
+    const YA=Math.min(188,Math.max(150,Yt+(ya-yb)*k)), Yh=Math.min(out?420:372,YA+(c.y1-ya)*k);
     const e0=out?7:3;
     // длинные рукава идут ниже подмышки отдельными кусками; у коротких это лишь скос края — его не тянем на руку
     let sideRows=0; for(let y=ya;y<=c.y1;y++){ const rs=R[y-c.y0], m=mid(rs); if(m && rs.some(r=>r[1]<m[0]||r[0]>m[1])) sideRows++; }
     const longSl = sideRows > ch*.14;
-    let yk=1; for(let y=c.y0;y<ya;y++){ const r=R[y-c.y0]; if(r.length) yk=Math.max(yk,r[r.length-1][1]-r[0][0]+1); }   // самая широкая строка плеч с рукавами
+    let yk=1; for(let y=yb;y<ya;y++){ const r=R[y-c.y0]; if(r.length) yk=Math.max(yk,r[r.length-1][1]-r[0][0]+1); }   // самая широкая строка плеч с рукавами
+    // капюшон ложится за голову манекена (голова нарисована поверх вещей), рисуем его первым
+    if(hood){
+      let hw=1; for(let y=c.y0;y<ys;y++){ const r=R[y-c.y0]; if(r.length) hw=Math.max(hw,r[r.length-1][1]-r[0][0]+1); }
+      const kh=Math.min(k,88/hw), Hb=Yt+8, Ht=Math.max(22,Hb-(ys-c.y0)*kh);
+      for(let yo=Math.floor(Ht*S);yo<=Math.ceil(Hb*S);yo++){
+        const Y=(yo+.5)/S, sy=pw([Ht,Hb],[c.y0,ys],Y), ri=Math.round(sy)-c.y0;
+        if(ri<0||ri>=R.length||!R[ri].length) continue;
+        const rs=R[ri], l=rs[0][0], r=rs[rs.length-1][1];
+        strip(o,a,sy,l,r,200+(l-cx)*kh+dx,200+(r+1-cx)*kh+dx,yo,.84);
+      }
+    }
     for(let yo=Math.floor(Yt*S);yo<=Math.ceil(Yh*S);yo++){
-      const Y=(yo+.5)/S, sy=pw([Yt,YA,Yh],[c.y0,ya,c.y1],Y), ri=Math.round(sy)-c.y0;
+      const Y=(yo+.5)/S, sy=pw([Yt,YA,Yh],[yb,ya,c.y1],Y), ri=Math.round(sy)-c.y0;
       if(ri<0||ri>=R.length||!R[ri].length) continue;
       const rs=R[ri], t=M.torso(Y-dx*0)||M.torso(205), aL=M.arm(Y,-1), aR=M.arm(Y,1), e=e0+Math.max(0,Y-205)*.05;
-      if(sy<ya){                                                   // плечи и рукава одним куском: от руки до руки
+      const ext = rs[rs.length-1][1]-rs[0][0]+1;
+      if(sy<ya && longSl && sy>yb+(ya-yb)*.4 && ext>Wb*1.25){       // длинный рукав прилегает к корпусу: делим строку на рукава и корпус
+        const tw=Math.max(t[1]-t[0],chest*.94)+2*e*(sc>1?sc:1), l=rs[0][0], r=rs[rs.length-1][1];
+        const bl=Math.max(l,Math.round(cx-Wb/2)), br=Math.min(r,Math.round(cx+Wb/2));
+        if(bl-l>2 && aL) strip(o,a,sy,l,bl,aL[0]-2+dx,aL[1]+2+dx,yo,.9);
+        if(r-br>2 && aR) strip(o,a,sy,br,r,aR[0]-2+dx,aR[1]+2+dx,yo,.9);
+        strip(o,a,sy,bl,br,200-tw/2+dx,200+tw/2+dx,yo);
+      } else if(sy<ya){                                            // плечи и рукава одним куском: от руки до руки
         // ширину берём пропорционально самой широкой строке — так сохраняется наклон плеч и узкий воротник
         const L=Math.min(t[0],aL?aL[0]:t[0])-e*.6, Rr=Math.max(t[1],aR?aR[1]:t[1])+e*.6, q=Math.max(200-L,Rr-200)/(yk/2);
         const l=rs[0][0], r=rs[rs.length-1][1];
@@ -1578,10 +1607,52 @@ const FIT = (function(){
     }
   }
   const cxOf = rs => (rs[0][0]+rs[rs.length-1][1])/2;
-  // Обувь: пара — как есть по ширине ступней; одна туфля — на обе ноги, вторая зеркально
+  // Обувь. Пара на фото: левая туфля на левую ногу, правая на правую.
+  // Если туфли на фото слиплись, ищем между ними «перешеек»; не нашли (одна заходит за другую) — пара целиком под обеими ногами.
+  // Одна туфля: на обе ноги, вторая зеркально. Админ может выбрать вариант сам (fit.pair: 'pair' или 'one').
+  function piece(a,box,l){                          // кусок фото только с пикселями нужного куска
+    const w=box.x1-box.x0+1, h=box.y1-box.y0+1, cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    const g=cv.getContext('2d'), im=g.createImageData(w,h), o=im.data, d=a.d;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const i=(box.y0+y)*a.w+box.x0+x, j=(y*w+x)*4;
+      if(l && a.lab[i]!==l) continue; o[j]=d[i*4]; o[j+1]=d[i*4+1]; o[j+2]=d[i*4+2]; o[j+3]=d[i*4+3]; }
+    g.putImageData(im,0,0);
+    // по краям убираем пустоту
+    let x0=w,y0=h,x1=-1,y1=-1; for(let i=3,k=0;i<o.length;i+=4,k++) if(o[i]>=40){ const x=k%w, y=(k-x)/w; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    return x1<0 ? null : {cv,x0,y0,w:x1-x0+1,h:y1-y0+1};
+  }
+  function shoeParts(a,c){
+    const cut=q=>({x0:Math.max(q.x0,c.x0),y0:Math.max(q.y0,c.y0),x1:Math.min(q.x1,c.x1),y1:Math.min(q.y1,c.y1)});
+    if(a.comps.length>=2){
+      const ps=[...a.comps].sort((p,q)=>(p.x0+p.x1)-(q.x0+q.x1)).map(q=>{ const b=cut(q); return b.x1>b.x0&&b.y1>b.y0 ? piece(a,b,q.l) : null; });
+      if(ps[0] && ps[1]) return ps; }
+    // один кусок: ищем узкий перешеек по столбцам в середине
+    const cw=c.x1-c.x0+1, col=new Float32Array(cw);
+    for(let x=0;x<cw;x++){ let n=0; for(let y=c.y0;y<=c.y1;y++) if(a.A[y*a.w+c.x0+x]) n++; col[x]=n; }
+    const sm=x=>{ let s=0,n=0; for(let k=-3;k<=3;k++){ const j=x+k; if(j>=0&&j<cw){ s+=col[j]; n++; } } return s/n; };
+    let xs=-1, mn=1e9; for(let x=Math.round(cw*.3);x<=Math.round(cw*.7);x++){ const v=sm(x); if(v<mn){ mn=v; xs=x; } }
+    let pl=0, pr=0; for(let x=0;x<xs;x++) pl=Math.max(pl,sm(x)); for(let x=xs;x<cw;x++) pr=Math.max(pr,sm(x));
+    if(xs<0 || mn>Math.min(pl,pr)*.3) return [];
+    const L=piece(a,{x0:c.x0,y0:c.y0,x1:c.x0+xs,y1:c.y1},0), R=piece(a,{x0:c.x0+xs+1,y0:c.y0,x1:c.x1,y1:c.y1},0);
+    return L&&R ? [L,R] : [];
+  }
+  // сколько «горбов» у верхнего края силуэта: у одной туфли один (задник), у пары, где туфли заходят друг за друга, два
+  function humps(a,c){
+    const cw=c.x1-c.x0+1, ch=c.y1-c.y0+1, top=new Float32Array(cw);
+    for(let x=0;x<cw;x++){ let t=ch; for(let y=c.y0;y<=c.y1;y++) if(a.A[y*a.w+c.x0+x]){ t=y-c.y0; break; } top[x]=1-t/ch; }
+    const k=Math.max(3,Math.round(cw/40)); let n=0, st=0, lo=1e9, hi=0;
+    for(let x=0;x<cw;x++){ let s=0,m=0; for(let j=Math.max(0,x-k);j<=Math.min(cw-1,x+k);j++){ s+=top[j]; m++; } const v=s/m;
+      if(st===0){ if(v<lo) lo=v; if(v>lo+.08){ st=1; hi=v; } } else { if(v>hi) hi=v; if(v<hi-.08){ n++; st=0; lo=v; } } }
+    return n+(st?1:0);
+  }
   function drawShoes(g,a,c,fit){
-    const cw=c.x1-c.x0+1, ch=c.y1-c.y0+1, sc=+fit.s||1, dx=+fit.x||0, dy=+fit.y||0;
-    if(a.parts>=2 || cw/ch>3.2){ const k=Math.min(108/cw,46/ch)*sc, W=cw*k, H=ch*k;
+    const cw=c.x1-c.x0+1, ch=c.y1-c.y0+1, sc=+fit.s||1, dx=+fit.x||0, dy=+fit.y||0, mode=fit.pair||'';
+    const ps = mode==='one' ? [] : shoeParts(a,c);
+    if(ps.length===2){                                                   // пара: каждая на свою ногу
+      const k=Math.min(66/Math.max(ps[0].w,ps[1].w), 44/Math.max(ps[0].h,ps[1].h))*sc;
+      ps.forEach((p,i)=>{ const W=p.w*k, H=p.h*k; g.drawImage(p.cv,p.x0,p.y0,p.w,p.h,((i?229:171)-W/2+dx)*S,(584-H+dy)*S,W*S,H*S); });
+      return; }
+    const one = mode==='one' || (!mode && cw/ch>=1.3 && cw/ch<=3.2 && humps(a,c)<2);
+    if(!one){ const k=Math.min(112/cw,48/ch)*sc, W=cw*k, H=ch*k;      // пара, которую не разделить: целиком под обеими ногами
       g.drawImage(a.c,c.x0,c.y0,cw,ch,(200-W/2+dx)*S,(584-H+dy)*S,W*S,H*S); return; }
     const k=Math.min(64/cw,42/ch)*sc, W=cw*k, H=ch*k, y=(584-H+dy)*S;
     g.drawImage(a.c,c.x0,c.y0,cw,ch,(229-W/2+dx)*S,y,W*S,H*S);       // правая нога
@@ -1832,6 +1903,97 @@ const CUT = (function(){
     return {ok:true,canvas:c,ratio};
   }
   return { remove };
+})();
+/* ===== НЕЙРОСЕТЬ ДЛЯ УДАЛЕНИЯ ФОНА =====
+   U2-Net (u2netp, 4.5 МБ, лицензия Apache-2.0) запускается прямо в браузере (onnxruntime-web).
+   Сеть находит вещь, затем край маски уточняется по самому фото (guided filter), чтобы он шёл точно по ткани.
+   MLCUT.mask(canvas) → маска 0..1 (считается один раз), MLCUT.apply(canvas, mask, сила) → вырезанная вещь. */
+const MLCUT=(function(){
+  const ORT='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/';
+  let loading=null;
+  function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error('script')); document.head.appendChild(s); }); }
+  function init(){
+    if(!loading) loading=(async()=>{
+      if(!window.ort) await loadScript(ORT+'ort.min.js');
+      ort.env.wasm.wasmPaths=ORT; ort.env.wasm.numThreads=1;
+      return ort.InferenceSession.create('models/u2netp.onnx',{executionProviders:['wasm']});
+    })().catch(e=>{ loading=null; throw e; });
+    return loading;
+  }
+  function box(src,w,h,r){
+    const tmp=new Float32Array(w*h), out=new Float32Array(w*h);
+    for(let y=0;y<h;y++){ const o=y*w; let s=0,n=0; for(let x=0;x<=Math.min(r,w-1);x++){ s+=src[o+x]; n++; }
+      for(let x=0;x<w;x++){ tmp[o+x]=s/n; const a=x+r+1, b=x-r; if(a<w){ s+=src[o+a]; n++; } if(b>=0){ s-=src[o+b]; n--; } } }
+    for(let x=0;x<w;x++){ let s=0,n=0; for(let y=0;y<=Math.min(r,h-1);y++){ s+=tmp[y*w+x]; n++; }
+      for(let y=0;y<h;y++){ out[y*w+x]=s/n; const a=y+r+1, b=y-r; if(a<h){ s+=tmp[a*w+x]; n++; } if(b>=0){ s-=tmp[b*w+x]; n--; } } }
+    return out;
+  }
+  // уточнение края маски p по яркости фото I
+  function guided(I,p,w,h,r,eps){
+    const N=w*h, Ip=new Float32Array(N), II=new Float32Array(N);
+    for(let i=0;i<N;i++){ Ip[i]=I[i]*p[i]; II[i]=I[i]*I[i]; }
+    const mI=box(I,w,h,r), mp=box(p,w,h,r), mIp=box(Ip,w,h,r), mII=box(II,w,h,r), a=new Float32Array(N), b=new Float32Array(N);
+    for(let i=0;i<N;i++){ const v=mII[i]-mI[i]*mI[i], c=mIp[i]-mI[i]*mp[i]; a[i]=c/(v+eps); b[i]=mp[i]-a[i]*mI[i]; }
+    const ma=box(a,w,h,r), mb=box(b,w,h,r), q=new Float32Array(N);
+    for(let i=0;i<N;i++) q[i]=ma[i]*I[i]+mb[i];
+    return q;
+  }
+  async function mask(canvas){
+    const s=await init(), S=320, w=canvas.width, h=canvas.height, N=w*h;
+    const t=document.createElement('canvas'); t.width=S; t.height=S; const tg=t.getContext('2d'); tg.drawImage(canvas,0,0,S,S);
+    const px=tg.getImageData(0,0,S,S).data; let mx=1; for(let i=0;i<px.length;i+=4) mx=Math.max(mx,px[i],px[i+1],px[i+2]);
+    const M=[.485,.456,.406], D=[.229,.224,.225], inp=new Float32Array(3*S*S);
+    for(let i=0;i<S*S;i++) for(let c=0;c<3;c++) inp[c*S*S+i]=(px[i*4+c]/mx-M[c])/D[c];
+    const feeds={}; feeds[s.inputNames[0]]=new ort.Tensor('float32',inp,[1,3,S,S]);
+    const o=(await s.run(feeds))[s.outputNames[0]].data;
+    let lo=1e9,hi=-1e9; for(const v of o){ if(v<lo)lo=v; if(v>hi)hi=v; }
+    const m=document.createElement('canvas'); m.width=S; m.height=S; const mg=m.getContext('2d'), md=mg.createImageData(S,S);
+    for(let i=0;i<S*S;i++){ const v=Math.round((o[i]-lo)/((hi-lo)||1)*255); md.data[i*4]=md.data[i*4+1]=md.data[i*4+2]=v; md.data[i*4+3]=255; }
+    mg.putImageData(md,0,0);
+    const u=document.createElement('canvas'); u.width=w; u.height=h; const ug=u.getContext('2d'); ug.imageSmoothingQuality='high'; ug.drawImage(m,0,0,w,h);
+    const ud=ug.getImageData(0,0,w,h).data, d=canvas.getContext('2d').getImageData(0,0,w,h).data;
+    const P=new Float32Array(N), I=new Float32Array(N);
+    for(let i=0;i<N;i++){ P[i]=ud[i*4]/255; I[i]=(d[i*4]*.299+d[i*4+1]*.587+d[i*4+2]*.114)/255; }
+    return guided(I,P,w,h,Math.max(2,Math.round(Math.min(w,h)/220)),2e-3);
+  }
+  // сила 0..100: больше — режем смелее (порог маски выше)
+  function apply(canvas,q,tol){
+    const w=canvas.width, h=canvas.height, N=w*h, th=.5+(Math.max(0,Math.min(100,tol))-50)/100*.5;
+    const d=canvas.getContext('2d').getImageData(0,0,w,h).data, A=new Float32Array(N), F=new Uint8Array(N);
+    for(let i=0;i<N;i++){ A[i]=Math.max(0,Math.min(1,(q[i]-th)*2.4+.5)); F[i]=A[i]>.5?1:0; }
+    // убираем мелкие островки фона, оставляем крупные куски (пара обуви — два куска)
+    const lab=new Int32Array(N), st=new Int32Array(N), size=[0];
+    for(let i=0,cur=0;i<N;i++){ if(!F[i]||lab[i]) continue; cur++; let sp=0,c=0; st[sp++]=i; lab[i]=cur;
+      while(sp){ const j=st[--sp], x=j%w; c++;
+        if(x>0&&F[j-1]&&!lab[j-1]){lab[j-1]=cur;st[sp++]=j-1;} if(x<w-1&&F[j+1]&&!lab[j+1]){lab[j+1]=cur;st[sp++]=j+1;}
+        if(j>=w&&F[j-w]&&!lab[j-w]){lab[j-w]=cur;st[sp++]=j-w;} if(j<N-w&&F[j+w]&&!lab[j+w]){lab[j+w]=cur;st[sp++]=j+w;} }
+      size.push(c); }
+    let big=0; for(let i=1;i<size.length;i++) big=Math.max(big,size[i]);
+    // небольшие «дыры» внутри вещи (тёмное нутро обуви на тёмном фоне) заливаем обратно
+    { const G=new Uint8Array(N); for(let i=0;i<N;i++) G[i]=A[i]>=.9?1:0;      // «точно вещь»
+      const hl=new Int32Array(N), hs=[0], ht=[0];
+      for(let i=0,cur=0;i<N;i++){ if(G[i]||hl[i]) continue; cur++; let sp=0,c=0,t=0; st[sp++]=i; hl[i]=cur;
+        while(sp){ const j=st[--sp], x=j%w; c++; if(x===0||x===w-1||j<w||j>=N-w) t=1;
+          if(x>0&&!G[j-1]&&!hl[j-1]){hl[j-1]=cur;st[sp++]=j-1;} if(x<w-1&&!G[j+1]&&!hl[j+1]){hl[j+1]=cur;st[sp++]=j+1;}
+          if(j>=w&&!G[j-w]&&!hl[j-w]){hl[j-w]=cur;st[sp++]=j-w;} if(j<N-w&&!G[j+w]&&!hl[j+w]){hl[j+w]=cur;st[sp++]=j+w;} }
+        hs.push(c); ht.push(t); }
+      const lim=Math.min(N*.015, big*.12);
+      for(let i=0;i<N;i++){ const l=hl[i]; if(l && !ht[l] && hs[l]<lim){ A[i]=1; F[i]=2; } } }
+    const out=document.createElement('canvas'); out.width=w; out.height=h; const og=out.getContext('2d'), oi=og.createImageData(w,h), od=oi.data;
+    let kept=0;
+    for(let i=0;i<N;i++){
+      let a=A[i]; if(lab[i] && size[lab[i]]<big*.08) a=0;
+      if(F[i]===2) a=1;
+      else if(!lab[i] && a>.02){ // полупрозрачный край: оставляем только рядом с крупным куском
+        const x=i%w, nb=[i-1,i+1,i-w,i+w].some(j=>j>=0&&j<N&&lab[j]&&size[lab[j]]>=big*.08&&Math.abs((j%w)-x)<=1); if(!nb) a=0; }
+      od[i*4]=d[i*4]; od[i*4+1]=d[i*4+1]; od[i*4+2]=d[i*4+2]; od[i*4+3]=Math.round(a*255); if(a>.5) kept++;
+    }
+    og.putImageData(oi,0,0);
+    const ratio=kept/N;
+    if(ratio<.02) return {ok:false,canvas:out,ratio,reason:'Вещь на фото не найдена. Попробуйте уменьшить силу обрезки.'};
+    return {ok:true,canvas:out,ratio};
+  }
+  return {init,mask,apply};
 })();
 
 </script>
@@ -2646,6 +2808,7 @@ function fitEdHTML(p){
       <div class="fp-stage fe-stage"><div class="fp-fig" id="feFig">${FIT.figHTML('fe')}</div></div>
       <div class="fe-ctl">
         <select class="inp" id="f_layer" onchange="fitEdRefresh()">${L.map(([v,t])=>`<option value="${v}"${(p.tryLayer||'')===v?' selected':''}>${t}</option>`).join('')}</select>
+        <select class="inp" id="f_pair" onchange="fitEdRefresh()" style="display:none">${[['','Обувь на фото: определить самому'],['pair','На фото пара: левая и правая'],['one','На фото одна: показать на обеих ногах']].map(([v,t])=>`<option value="${v}"${(f.pair||'')===v?' selected':''}>${t}</option>`).join('')}</select>
         ${FE_SL.map(([k,t,mn,mx,d,u])=>`<label class="fe-r"><span>${t}<b id="fe_${k}_v"></b></span><input type="range" id="fe_${k}" min="${mn}" max="${mx}" value="${val(k)}" data-u="${u}"${k==='t'&&f.t==null?' data-auto="1"':''} oninput="${k==='t'?'this.dataset.auto=\'\';':''}fitEdRefresh()"></label>`).join('')}
         <button type="button" class="adm-mini" onclick="fitEdReset()">Подогнать автоматически</button>
         <div class="fe-msg" id="feMsg"></div>
@@ -2658,6 +2821,7 @@ function fitEdValues(){
   if(g('s')!==100) f.s=g('s')/100;
   if(g('x')) f.x=g('x'); if(g('y')) f.y=g('y'); if(g('b')) f.b=g('b')/100; if(g('w')) f.w=g('w')/100;
   if(!$('#fe_t').dataset.auto) f.t=g('t')/100;
+  const pr=$('#f_pair'); if(pr && pr.value && pr.style.display!=='none') f.pair=pr.value;
   return Object.keys(f).length ? f : null;
 }
 function fitEdReset(){
@@ -2669,6 +2833,7 @@ function fitEdRefresh(){
   const sel=$('#f_layer').value, img=imgVal('f_img1');
   const layer = sel==='none' ? null : (sel || fitLayer({category:$('#f_cat').value, name:$('#f_name').value}));
   const dm = sel==='none' ? null : FIT.demo(editingId);
+  const pr=$('#f_pair'); if(pr) pr.style.display = layer==='shoes' ? '' : 'none';
   const msg=t=>{ $('#feMsg').innerHTML=t; };
   const lock=on=>FE_SL.forEach(([k])=>$('#fe_'+k).disabled=on);
   LAYERS_ALL.forEach(l=>FIT.off($('#fe-'+l)));
@@ -2725,26 +2890,68 @@ function pickImg(input,targetId){
   r.readAsDataURL(file); input.value='';
 }
 /* ===== Автоматическое удаление фона у фото товара =====
-   После загрузки фото сайт сам убирает фон. Админ видит результат на «шахматке»,
-   может поменять силу обрезки или вернуть исходное фото. */
+   После загрузки фото нейросеть сама находит вещь и убирает фон (без интернета работает запасной способ).
+   Админ видит результат на «шахматке», может поменять силу обрезки, подправить кистью или вернуть исходное фото. */
 const CUT_SRC={};
 async function cutApply(id){
   const st=CUT_SRC[id], box=$('#cut_'+id); if(!st || !box) return;
-  box.innerHTML='<div class="cut-msg">Убираю фон с фото…</div>';
-  await new Promise(r=>setTimeout(r,40));
+  if(!st.off && !st.q && !st.noML){
+    box.innerHTML='<div class="cut-msg">Нейросеть ищет вещь на фото… В первый раз это занимает несколько секунд.</div>';
+    await new Promise(r=>setTimeout(r,40));
+    try{ st.q=await MLCUT.mask(st.canvas); }catch(e){ st.noML=true; }
+    if(!$('#'+id) || CUT_SRC[id]!==st) return;          // форму закрыли или загрузили другое фото
+  }
   let r={ok:false,reason:''};
-  if(!st.off){ try{ r=await CUT.remove(st.canvas,{tol:st.tol,max:1200}); }catch(e){ r={ok:false,reason:'Не удалось обработать фото.'}; } }
-  if(!$('#'+id) || CUT_SRC[id]!==st) return;          // форму закрыли или загрузили другое фото
-  let out=st.orig;
-  if(r.ok){ out=r.canvas.toDataURL('image/webp',.9); if(out.indexOf('data:image/webp')!==0) out=r.canvas.toDataURL('image/png'); }
-  IMG_BUF[id]=out; $('#'+id).value=IMG_MARK;
-  const msg = st.off ? 'Оставлено исходное фото, с фоном.' : r.ok ? 'Фон убран автоматически. Если задело вещь, уменьшите силу; если остался фон, увеличьте.' : (r.reason+' Сохранено исходное фото.');
-  box.innerHTML=`<div class="cut-prev${r.ok?' ok':''}"><img src="${out}" alt="Результат"></div>
+  if(!st.off){ try{ r = st.q ? MLCUT.apply(st.canvas,st.q,st.tol) : await CUT.remove(st.canvas,{tol:st.tol,max:1200}); }
+    catch(e){ r={ok:false,reason:'Не удалось обработать фото.'}; } }
+  if(!$('#'+id) || CUT_SRC[id]!==st) return;
+  st.cut = r.ok && !st.off;
+  st.work=document.createElement('canvas'); st.work.width=st.canvas.width; st.work.height=st.canvas.height;
+  st.work.getContext('2d').drawImage(st.cut ? r.canvas : st.canvas,0,0);
+  const msg = st.off ? 'Оставлено исходное фото, с фоном.'
+    : st.cut ? 'Фон убран автоматически. Если осталось лишнее или задело вещь, поменяйте силу обрезки или поправьте кистью прямо на фото.'
+    : (r.reason+' Сохранено исходное фото.');
+  box.innerHTML=`<div class="cut-prev"><canvas id="cutc_${id}" aria-label="Результат"></canvas></div>
     <div class="cut-msg">${esc(msg)}</div>
     <div class="cut-row">${st.off?'':`<label class="cut-tol">Сила обрезки <input type="range" min="0" max="100" step="5" value="${st.tol}" onchange="CUT_SRC['${id}'].tol=+this.value;cutApply('${id}')"></label>`}
-      <button type="button" class="adm-mini" onclick="CUT_SRC['${id}'].off=!CUT_SRC['${id}'].off;cutApply('${id}')">${st.off?'Убрать фон':'Вернуть как было'}</button></div>`;
-  toast(r.ok && !st.off ? 'Фото загружено, фон убран' : 'Фото загружено');
+      <button type="button" class="adm-mini" onclick="CUT_SRC['${id}'].off=!CUT_SRC['${id}'].off;cutApply('${id}')">${st.off?'Убрать фон':'Вернуть как было'}</button></div>
+    ${st.cut?`<div class="cut-row cut-brush"><span class="cut-bl">Кисть</span>
+      <button type="button" class="adm-mini${st.mode!=='keep'?' on':''}" onclick="cutMode('${id}','erase',this)">Стереть фон</button>
+      <button type="button" class="adm-mini${st.mode==='keep'?' on':''}" onclick="cutMode('${id}','keep',this)">Вернуть вещь</button>
+      <label class="cut-tol">Размер <input type="range" min="4" max="90" value="${st.bs||28}" oninput="CUT_SRC['${id}'].bs=+this.value"></label></div>`:''}`;
+  cutDraw(id); cutBind(id); cutSave(id,true);
+}
+function cutMode(id,m,btn){ CUT_SRC[id].mode=m; btn.parentNode.querySelectorAll('.adm-mini').forEach(b=>b.classList.toggle('on',b===btn)); }
+function cutDraw(id){
+  const st=CUT_SRC[id], c=$('#cutc_'+id); if(!st||!c) return;
+  if(c.width!==st.work.width){ c.width=st.work.width; c.height=st.work.height; }
+  const g=c.getContext('2d'); g.clearRect(0,0,c.width,c.height); g.drawImage(st.work,0,0);
+}
+function cutSave(id,first){
+  const st=CUT_SRC[id]; if(!st) return;
+  let out=st.orig;
+  if(st.cut){ out=st.work.toDataURL('image/webp',.9); if(out.indexOf('data:image/webp')!==0) out=st.work.toDataURL('image/png'); }
+  IMG_BUF[id]=out; $('#'+id).value=IMG_MARK;
+  if(first) toast(st.cut ? 'Фото загружено, фон убран' : 'Фото загружено');
   if(id==='f_img1') fitEdRefresh();
+}
+/* кисть: «Стереть фон» делает пиксели прозрачными, «Вернуть вещь» возвращает их с исходного фото */
+function cutBind(id){
+  const c=$('#cutc_'+id), st=CUT_SRC[id]; if(!c || !st || !st.cut) return;
+  let last=null, t=null;
+  const pt=e=>{ const r=c.getBoundingClientRect(), k=c.width/r.width; return [(e.clientX-r.left)*k,(e.clientY-r.top)*k,k]; };
+  const dab=(x0,y0,x1,y1,k)=>{
+    const g=st.work.getContext('2d'), R=(st.bs||28)/2*k, n=Math.max(1,Math.ceil(Math.hypot(x1-x0,y1-y0)/(R*.4)));
+    g.save(); g.beginPath();
+    for(let i=0;i<=n;i++){ const x=x0+(x1-x0)*i/n, y=y0+(y1-y0)*i/n; g.moveTo(x+R,y); g.arc(x,y,R,0,Math.PI*2); }
+    if(st.mode==='keep'){ g.clip(); g.drawImage(st.canvas,0,0); }
+    else { g.globalCompositeOperation='destination-out'; g.fill(); }
+    g.restore(); cutDraw(id);
+  };
+  c.addEventListener('pointerdown',e=>{ e.preventDefault(); c.setPointerCapture(e.pointerId); const [x,y,k]=pt(e); last=[x,y]; dab(x,y,x,y,k); });
+  c.addEventListener('pointermove',e=>{ if(!last) return; const [x,y,k]=pt(e); dab(last[0],last[1],x,y,k); last=[x,y]; });
+  const end=()=>{ if(!last) return; last=null; clearTimeout(t); t=setTimeout(()=>cutSave(id),150); };
+  c.addEventListener('pointerup',end); c.addEventListener('pointercancel',end);
 }
 function saveProductForm(){
   const name=$('#f_name').value.trim();
