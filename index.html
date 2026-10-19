@@ -1521,7 +1521,11 @@ const FIT = (function(){
     let sx=0,sn=0; for(let y=c.y0+(ch>>1);y<=c.y1;y++) for(const r of R[y-c.y0]){ sx+=(r[0]+r[1])/2*(r[1]-r[0]); sn+=r[1]-r[0]; }
     const cx=sn?sx/sn:(c.x0+c.x1)/2;
     const mid=rs=>{ let best=null,bd=1e9; for(const r of rs){ const dd=r[0]<=cx&&r[1]>=cx?0:Math.min(Math.abs(r[0]-cx),Math.abs(r[1]-cx)); if(dd<bd){bd=dd;best=r;} } return best; };
-    const wb=[]; for(let y=c.y0+Math.round(ch*.55);y<=c.y0+Math.round(ch*.92);y++){ const m=mid(R[y-c.y0]); if(m) wb.push(m[1]-m[0]+1); }
+    // ширина корпуса: по низу вещи (резинка, подол), туда не достают согнутые рукава
+    const wb=[], wm=[];
+    for(let y=c.y0+Math.round(ch*.86);y<=c.y0+Math.round(ch*.97);y++){ const m=mid(R[y-c.y0]); if(m) wb.push(m[1]-m[0]+1); }
+    for(let y=c.y0+Math.round(ch*.55);y<=c.y0+Math.round(ch*.92);y++){ const m=mid(R[y-c.y0]); if(m) wm.push(m[1]-m[0]+1); }
+    if(!wb.length) wb.push(...wm);
     const Wb=median(wb)||(c.x1-c.x0+1);
     // линия плеч: первая строка, где вещь уже широкая. Всё, что выше и заметно по высоте, это капюшон
     const top45=c.y0+Math.round(ch*.45);
@@ -1529,23 +1533,24 @@ const FIT = (function(){
     let ys=c.y0; for(let y=c.y0;y<=top45;y++){ const r=R[y-c.y0]; if(r.length && r[r.length-1][1]-r[0][0]+1>=ykt*.55){ ys=y; break; } }
     const hood = ys-c.y0 > ch*.13, yb = hood ? ys : c.y0, bh=c.y1-yb+1;
     let ya=-1; for(let y=yb+Math.round(bh*.12);y<=c.y1;y++){ const m=mid(R[y-c.y0]); if(m && m[1]-m[0]+1<=Wb*1.12){ ya=y; break; } }
-    if(ya<0) ya=yb+Math.round(bh*.3);
+    if(ya<0 || ya>yb+bh*.5) ya=yb+Math.round(bh*.33);              // рукава слились с корпусом до низа: подмышка на обычной высоте
     const chest=(M.torso(205)[1]-M.torso(205)[0])*(out?1.13:1.05)*sc, k=chest/Wb;
     const Yt=(out?100:106)+(+fit.y||0), dx=+fit.x||0;
     const YA=Math.min(188,Math.max(150,Yt+(ya-yb)*k)), Yh=Math.min(out?420:372,YA+(c.y1-ya)*k);
     const e0=out?7:3;
     // длинные рукава идут ниже подмышки отдельными кусками; у коротких это лишь скос края — его не тянем на руку
-    let sideRows=0; for(let y=ya;y<=c.y1;y++){ const rs=R[y-c.y0], m=mid(rs); if(m && rs.some(r=>r[1]<m[0]||r[0]>m[1])) sideRows++; }
+    let sideRows=0; for(let y=ya;y<=c.y1;y++){ const rs=R[y-c.y0], m=mid(rs); if(m && (rs.some(r=>r[1]<m[0]||r[0]>m[1]) || m[1]-m[0]+1>Wb*1.25)) sideRows++; }
     const longSl = sideRows > ch*.14;
     let yk=1; for(let y=yb;y<ya;y++){ const r=R[y-c.y0]; if(r.length) yk=Math.max(yk,r[r.length-1][1]-r[0][0]+1); }   // самая широкая строка плеч с рукавами
     // капюшон ложится за голову манекена (голова нарисована поверх вещей), рисуем его первым
     if(hood){
-      let hw=1; for(let y=c.y0;y<ys;y++){ const r=R[y-c.y0]; if(r.length) hw=Math.max(hw,r[r.length-1][1]-r[0][0]+1); }
+      const hws=[]; for(let y=c.y0;y<ys;y++){ const r=R[y-c.y0]; if(r.length) hws.push(r[r.length-1][1]-r[0][0]+1); }
+      hws.sort((p,q)=>p-q); const hw=hws[Math.floor(hws.length*.8)]||1;             // ширина капюшона без торчащих кончиков плеч и шнурков
       const kh=Math.min(k,88/hw), Hb=Yt+8, Ht=Math.max(22,Hb-(ys-c.y0)*kh);
       for(let yo=Math.floor(Ht*S);yo<=Math.ceil(Hb*S);yo++){
         const Y=(yo+.5)/S, sy=pw([Ht,Hb],[c.y0,ys],Y), ri=Math.round(sy)-c.y0;
         if(ri<0||ri>=R.length||!R[ri].length) continue;
-        const rs=R[ri], l=rs[0][0], r=rs[rs.length-1][1];
+        const rs=R[ri], l=Math.max(rs[0][0],Math.round(cx-hw*.6)), r=Math.min(rs[rs.length-1][1],Math.round(cx+hw*.6)); if(r-l<2) continue;
         strip(o,a,sy,l,r,200+(l-cx)*kh+dx,200+(r+1-cx)*kh+dx,yo,.84);
       }
     }
@@ -1568,11 +1573,22 @@ const FIT = (function(){
       } else {
         const m=mid(rs), tw=Math.max(t[1]-t[0],chest*.94/1)+2*e*(sc>1?sc:1);
         const L=200-tw/2, Rr=200+tw/2;
-        // рукава ниже подмышки — отдельные куски слева и справа от корпуса
-        const left=rs.filter(r=>r[1]<m[0]), right=rs.filter(r=>r[0]>m[1]);
-        if(longSl && left.length && aL) strip(o,a,sy,left[0][0],left[left.length-1][1],aL[0]-2+dx,aL[1]+2+dx,yo,.9);
-        if(longSl && right.length && aR) strip(o,a,sy,right[0][0],right[right.length-1][1],aR[0]-2+dx,aR[1]+2+dx,yo,.9);
-        strip(o,a,sy,m[0],m[1],L+dx,Rr+dx,yo);
+        // рукава ниже подмышки: куски строки за пределами корпуса идут на руки, остальное — корпус в пропорции
+        const bL=cx-Wb*.5, bR=cx+Wb*.5, bs=tw/Wb, mn=Math.max(3,Wb*.06), body=[], left=[], right=[];
+        for(const r of rs){
+          if(longSl && r[1]<bL) left.push(r);                               // целиком левее корпуса
+          else if(longSl && r[0]>bR) right.push(r);
+          else {
+            let a0=r[0], a1=r[1];
+            if(longSl && sy<c.y1-ch*.03){                                    // рукав прилегает к корпусу: край шире корпуса уходит на руку
+              if(bL-a0>mn){ left.push([a0,Math.round(bL)]); a0=Math.round(bL); }
+              if(a1-bR>mn){ right.push([Math.round(bR),a1]); a1=Math.round(bR); } }
+            body.push([Math.max(a0,Math.round(bL-Wb*.08)),Math.min(a1,Math.round(bR+Wb*.08))]);
+          }
+        }
+        if(left.length && aL) strip(o,a,sy,left[0][0],left[left.length-1][1],aL[0]-2+dx,aL[1]+2+dx,yo,.9);
+        if(right.length && aR) strip(o,a,sy,right[0][0],right[right.length-1][1],aR[0]-2+dx,aR[1]+2+dx,yo,.9);
+        for(const r of body) if(r[1]-r[0]>=1) strip(o,a,sy,r[0],r[1],200+(r[0]-cx)*bs+dx,200+(r[1]+1-cx)*bs+dx,yo);
       }
     }
   }
@@ -1652,7 +1668,7 @@ const FIT = (function(){
       ps.forEach((p,i)=>{ const W=p.w*k, H=p.h*k; g.drawImage(p.cv,p.x0,p.y0,p.w,p.h,((i?229:171)-W/2+dx)*S,(584-H+dy)*S,W*S,H*S); });
       return; }
     const one = mode==='one' || (!mode && cw/ch>=1.3 && cw/ch<=3.2 && humps(a,c)<2);
-    if(!one){ const k=Math.min(112/cw,48/ch)*sc, W=cw*k, H=ch*k;      // пара, которую не разделить: целиком под обеими ногами
+    if(!one){ const k=Math.min(118/cw,54/ch)*sc, W=cw*k, H=ch*k;      // пара, которую не разделить: целиком под обеими ногами
       g.drawImage(a.c,c.x0,c.y0,cw,ch,(200-W/2+dx)*S,(584-H+dy)*S,W*S,H*S); return; }
     const k=Math.min(64/cw,42/ch)*sc, W=cw*k, H=ch*k, y=(584-H+dy)*S;
     g.drawImage(a.c,c.x0,c.y0,cw,ch,(229-W/2+dx)*S,y,W*S,H*S);       // правая нога
