@@ -1,7 +1,7 @@
 {
  "_v": 2,
- "_rev": 1,
- "_date": "2026-10-19T22:14:44.730Z",
+ "_rev": 1792451123775,
+ "_date": "2026-10-19T23:05:23.775Z",
  "products": [
   {
    "id": "lion-tee",
@@ -213,7 +213,10 @@
    "description": "Натуральная кожа, молния, строгий силуэт.",
    "price": 18900,
    "oldPrice": 21900,
-   "images": [],
+   "images": [
+    "images/p/jacket-leather-1-mvfv4apk.png",
+    "images/p/jacket-leather-2-mvfv4apk.png"
+   ],
    "colors": [
     "Чёрный",
     "Коричневый"
@@ -230,13 +233,33 @@
     "XL": 1,
     "XXL": 1
    },
+   "specs": [
+    {
+     "k": "Материал",
+     "v": "Натуральная кожа"
+    },
+    {
+     "k": "Подклад",
+     "v": "Вискоза"
+    },
+    {
+     "k": "Застёжка",
+     "v": "Молния"
+    }
+   ],
+   "newArrival": false,
+   "sale": true,
+   "featured": true,
    "where": [
     "grozny",
     "shali"
    ],
-   "featured": true,
-   "newArrival": false,
-   "sale": true
+   "fit": {
+    "s": 0.96,
+    "y": 4,
+    "w": 0.21,
+    "t": 0.25
+   }
   },
   {
    "id": "hoodie-zip",
@@ -280,11 +303,14 @@
    "description": "Строгие брюки со стрелками, посадка по талии.",
    "price": 6900,
    "oldPrice": null,
-   "images": [],
+   "images": [
+    "images/p/pants-classic-1-mvfv4apk.png",
+    "images/p/pants-classic-1-mvfv4apk.png"
+   ],
    "colors": [
     "Чёрный",
-    "Тёмно-синий",
-    "Серый"
+    "Серый",
+    "Тёмно-синий"
    ],
    "sizes": [
     "S",
@@ -300,13 +326,27 @@
     "XL": 1,
     "XXL": 1
    },
+   "specs": [
+    {
+     "k": "Материал",
+     "v": "Костюмная ткань"
+    },
+    {
+     "k": "Посадка",
+     "v": "Средняя"
+    },
+    {
+     "k": "Детали",
+     "v": "Стрелки"
+    }
+   ],
+   "newArrival": false,
+   "sale": false,
+   "featured": true,
    "where": [
     "grozny",
     "shali"
-   ],
-   "featured": true,
-   "newArrival": false,
-   "sale": false
+   ]
   },
   {
    "id": "cargo-khaki",
@@ -416,10 +456,13 @@
    "description": "Гладкая кожа, лёгкая подошва, золотая деталь на пятке.",
    "price": 9900,
    "oldPrice": 11900,
-   "images": [],
+   "images": [
+    "images/p/sneak-white-1-mvfv4apk.png",
+    "images/p/sneak-white-1-mvfv4apk.png"
+   ],
    "colors": [
-    "Белый",
-    "Чёрный"
+    "Чёрный",
+    "Белый"
    ],
    "sizes": [
     "40",
@@ -435,15 +478,25 @@
     "42": 1,
     "43": 1,
     "44": 1,
-    "45": 0
+    "45": 1
    },
+   "specs": [
+    {
+     "k": "Верх",
+     "v": "Гладкая кожа"
+    },
+    {
+     "k": "Подошва",
+     "v": "Лёгкая EVA"
+    }
+   ],
+   "newArrival": true,
+   "sale": true,
+   "featured": false,
    "where": [
     "grozny",
     "shali"
-   ],
-   "featured": false,
-   "newArrival": true,
-   "sale": true
+   ]
   }
  ],
  "categories": [
