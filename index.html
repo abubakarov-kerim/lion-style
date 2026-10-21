@@ -997,13 +997,43 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 .gh .gh-i.ph{ padding:2px; }
 .gh .gh-full{ inset:0; width:100%; height:100%; } .gh .gh-full img{ object-fit:contain; filter:drop-shadow(0 6px 10px rgba(4,10,24,.35)); }
 .lk-stage .gh{ top:4%; height:92%; }
+
+/* ===== «Вешалка» ===== */
+.rl{ position:absolute; inset:0; overflow:hidden; --gold:var(--amber); }
+.rl-bar{ position:absolute; top:7%; left:3%; right:3%; height:6px; border-radius:3px; z-index:3;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--gold) 55%, #fff) 0%, var(--gold) 45%, color-mix(in srgb, var(--gold) 55%, #000) 100%);
+  box-shadow:0 3px 6px rgba(0,0,0,.35); }
+.rl-bar::before, .rl-bar::after{ content:""; position:absolute; top:-3px; width:12px; height:12px; border-radius:50%; background:inherit; box-shadow:inherit; }
+.rl-bar::before{ left:-6px; } .rl-bar::after{ right:-6px; }
+.rl-shelf{ position:absolute; top:86%; left:8%; right:8%; height:5px; border-radius:2px; z-index:1;
+  background:linear-gradient(180deg, color-mix(in srgb, var(--gold) 45%, #fff), color-mix(in srgb, var(--gold) 60%, #000)); box-shadow:0 8px 14px rgba(0,0,0,.35); }
+.rl-i{ position:absolute; top:calc(7% - 4px); height:66%; margin:0; z-index:2; transform-origin:50% 0; }
+.rl-h{ position:absolute; top:0; left:50%; width:62%; transform:translateX(-50%); overflow:visible; z-index:1;
+  fill:none; stroke:var(--gold); stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+.rl-g{ position:absolute; left:0; right:0; top:11%; bottom:0; z-index:2; }
+.rl-g img{ width:100%; height:100%; object-fit:contain; object-position:50% 0; display:block; }
+.rl-g.cut img, .rl-s.cut img{ filter:drop-shadow(0 0 1.2px rgba(236,240,248,.55)) drop-shadow(0 10px 12px rgba(4,10,24,.4)); }
+.rl-g.ph img{ object-fit:cover; border:1px solid var(--line); }
+.rl-s{ position:absolute; bottom:14%; height:17%; margin:0; z-index:2; }
+.rl-s img{ width:100%; height:100%; object-fit:contain; object-position:50% 100%; display:block; }
+.rl-empty .rl-h{ width:100%; opacity:.55; }
+@media (prefers-reduced-motion: no-preference){
+  .rl-i.new{ animation:rlSwing 1.5s cubic-bezier(.3,.7,.4,1) both; animation-delay:var(--d,0ms); }
+  .rl-s.new{ animation:rlDrop .55s cubic-bezier(.16,1,.3,1) both; }
+  .rl-empty{ animation:rlIdle 4s ease-in-out infinite alternate; }
+  @media (hover:hover){ .rl-i:not(.rl-empty):hover{ animation:rlSway 1.2s ease-in-out; } }
+}
+@keyframes rlSwing{ 0%{ opacity:0; transform:translateY(-10px) rotate(9deg); } 18%{ opacity:1; } 38%{ transform:rotate(-6deg); } 60%{ transform:rotate(3deg); } 80%{ transform:rotate(-1.2deg); } 100%{ opacity:1; transform:none; } }
+@keyframes rlSway{ 0%,100%{ transform:none; } 30%{ transform:rotate(2.5deg); } 65%{ transform:rotate(-1.6deg); } }
+@keyframes rlDrop{ from{ opacity:0; transform:translateY(-14px); } to{ opacity:1; transform:none; } }
+@keyframes rlIdle{ from{ transform:rotate(-1.5deg); } to{ transform:rotate(1.5deg); } }
 </style>
 <script>(function(){try{var t=localStorage.getItem('lionTheme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <script>
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-21.5';
+var LION_BUILD='2026-10-21.6';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -2290,9 +2320,10 @@ function fitVerify(){
 }
 const LAYERS_ALL=['shoes','bottoms','tops','outerwear','accessory'];
 /* Режим примерочной: 'board' — «Собери образ» (вещи раскладываются на одном экране, фото без искажений),
+   'rail' — «Вешалка»: вещи висят на плечиках на золотой перекладине, обувь стоит на полке,
    'ghost' — «невидимый манекен»: голова, кисти и стопы, вещи стоят между ними как есть, без растягивания,
    'mannequin' — прежний манекен (код сохранён, чтобы вернуть его, поменяйте значение) */
-const TRY_MODE='ghost';
+const TRY_MODE='rail';
 document.documentElement.classList.toggle('try-board', TRY_MODE!=='mannequin');
 /* Фото годится для примерки, если это вырезанная вещь на прозрачном фоне (PNG / WebP) */
 const cutoutImg = u => typeof u==='string' && !cutImg(u) && (/^data:image\/(png|webp)/i.test(u) || /\.(png|webp)(\?|#|$)/i.test(u));
@@ -2333,7 +2364,44 @@ function ghostHTML(items){
       <img src="${esc(p.tryOn)}" alt="${esc(p.name)}" decoding="async" style="object-position:center ${r[4]}"></figure>`; }).join('');
   return `<div class="gh">${parts.back}${figs}${parts.front}</div>`;
 }
-const outfitHTML = items => TRY_MODE==='ghost' ? ghostHTML(items) : boardHTML(items);
+/* ===== «Вешалка» ===== */
+const RL_HANGER='<svg class="rl-h" viewBox="0 0 100 40" aria-hidden="true"><path d="M44 9a6 6 0 1 1 6 6v4L94 36H6L50 19"/></svg>';
+function railHTML(items, prev){
+  const by={}; items.forEach(p=>{ if(!by[p.layer]) by[p.layer]=p; });
+  const hang=['outerwear','tops','bottoms'].map(l=>by[l]).filter(Boolean), n=hang.length;
+  const W = n===1 ? 50 : n===2 ? 42 : 31, gap = n>1 ? (92-W*n)/(n-1) : 0, x0 = n===1 ? 25 : 4;
+  const isNew = p => !prev || !prev.has(p.id);
+  let h = '<div class="rl"><i class="rl-bar"></i><i class="rl-shelf"></i>';
+  if(!n) h += [22,41,60].map(x=>`<figure class="rl-i rl-empty" style="left:${x}%;width:18%">${RL_HANGER}</figure>`).join('');
+  hang.forEach((p,i)=>{ h += `<figure class="rl-i${isNew(p)?' new':''}" style="left:${x0+i*(W+gap)}%;width:${W}%;--d:${i*90}ms">${RL_HANGER}
+      <div class="rl-g ${p.boardCut?'cut':'ph'}"><img src="${esc(p.tryOn)}" alt="${esc(p.name)}" decoding="async"></div></figure>`; });
+  const low=['shoes','accessory'].map(l=>by[l]).filter(Boolean);
+  low.forEach((p,i)=>{ const w = low.length===1 ? 50 : 40, x = low.length===1 ? 25 : 8+i*46;
+    h += `<figure class="rl-s ${p.boardCut?'cut':'ph'}${isNew(p)?' new':''}" style="left:${x}%;width:${w}%"><img src="${esc(p.tryOn)}" alt="${esc(p.name)}" decoding="async"></figure>`; });
+  return h+'</div>';
+}
+/* прозрачные края на фото: вещь подтягиваем к плечикам, обувь ставим ровно на полку */
+const RL_EDGE=new Map();
+function railEdge(img){
+  const u=img.currentSrc||img.src; if(RL_EDGE.has(u)) return Promise.resolve(RL_EDGE.get(u));
+  return new Promise(res=>{ const done=()=>{ let e=[0,0];
+    try{ const k=Math.min(1,96/Math.max(img.naturalWidth,img.naturalHeight)), w=Math.max(1,Math.round(img.naturalWidth*k)), h=Math.max(1,Math.round(img.naturalHeight*k));
+      const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.drawImage(img,0,0,w,h); const d=g.getImageData(0,0,w,h).data;
+      const row=y=>{ for(let x=0;x<w;x++) if(d[(y*w+x)*4+3]>24) return true; return false; };
+      let t=0; while(t<h-1 && !row(t)) t++; let b=h-1; while(b>t && !row(b)) b--;
+      e=[t/h, (h-1-b)/h]; }catch(err){}
+    RL_EDGE.set(u,e); res(e); };
+    if(img.complete && img.naturalWidth) done(); else { img.addEventListener('load',done,{once:true}); img.addEventListener('error',()=>res([0,0]),{once:true}); } });
+}
+function railFix(root){
+  if(!root) return;
+  root.querySelectorAll('.rl-g.cut img, .rl-s.cut img').forEach(img=>railEdge(img).then(([t,b])=>{
+    const box=img.getBoundingClientRect(); if(!box.height || !img.naturalHeight) return;
+    const sc=Math.min(box.width/img.naturalWidth, box.height/img.naturalHeight), H=img.naturalHeight*sc;
+    const top=img.closest('.rl-s') ? 0 : 1;
+    img.style.transform = top ? `translateY(${-Math.round(t*H)}px)` : `translateY(${Math.round(b*H)}px)`; }));
+}
+const outfitHTML = (items,prev) => TRY_MODE==='rail' ? railHTML(items,prev) : TRY_MODE==='ghost' ? ghostHTML(items) : boardHTML(items);
 /* Накладываем слои примерки и характеристики на загруженные товары */
 function applyMeta(list){
   list.forEach(p=>{
@@ -3616,7 +3684,7 @@ function renderBoard(){
   LAYERS.forEach(l=>{ const sel=frLook[l], p=sel&&frFind(sel.id); if(sel && (!p || !p.tryOn || p.layer!==l)) frLook[l]=null; });
   const look=currentLook(), items=look.map(sel=>frFind(sel.id)), b=$('#frBoard');
   const key=items.map(p=>p.id).join(',');
-  if(b.dataset.k!==key){ b.dataset.k=key; b.innerHTML=outfitHTML(items); b.setAttribute('aria-label', items.length ? 'Ваш образ: '+items.map(p=>p.name).join(', ') : 'Образ пуст'); }
+  if(b.dataset.k!==key){ const prev=new Set((b.dataset.k||'').split(',').filter(Boolean)); b.dataset.k=key; b.innerHTML=outfitHTML(items,prev); if(TRY_MODE==='rail') requestAnimationFrame(()=>railFix(b)); b.setAttribute('aria-label', items.length ? 'Ваш образ: '+items.map(p=>p.name).join(', ') : 'Образ пуст'); }
   $('#frHint').textContent='Нажмите на вешалку у товара, чтобы добавить его в образ';
   $('#frHelp').textContent='Вещь того же вида заменяет выбранную.';
   renderPicks(look);                                                // список вещей и итог — общие с манекеном
@@ -3627,6 +3695,7 @@ function closeFitting(){ document.body.classList.remove('fr-open'); $('#frPanel'
 function frToggleBig(force){
   const pn=$('#frPanel'), big = force===undefined ? !pn.classList.contains('big') : force;
   pn.classList.toggle('big',big);
+  if(TRY_MODE==='rail') setTimeout(()=>railFix($('#frBoard')),380);
   document.querySelectorAll('#frPanel .fp-grab, #frPanel .fp-big-t').forEach(b=>b.setAttribute('aria-label', big?'Свернуть примерочную':'Развернуть примерочную'));
 }
 (function(){ /* свайп по верхней части панели на телефоне: вверх развернуть, вниз свернуть/закрыть */
