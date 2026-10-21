@@ -381,7 +381,7 @@ footer{ border-top:1px solid var(--line); padding:clamp(56px,8vw,90px) 0 40px; m
 .fp-fig img.on{ opacity:1; }
 .fp-fig img.fit{ height:auto; }
 .fp-fig .mq{ z-index:1; } .fp-fig .mq-head{ z-index:6; }
-.fp-fig .l-shoes{ z-index:2; } .fp-fig .l-bottoms{ z-index:3; } .fp-fig .l-tops{ z-index:4; } .fp-fig .l-outerwear{ z-index:5; } .fp-fig .l-accessory{ z-index:7; }
+.fp-fig .l-bottoms{ z-index:2; } .fp-fig .l-shoes{ z-index:3; }   /* обувь поверх штанин */ .fp-fig .l-tops{ z-index:4; } .fp-fig .l-outerwear{ z-index:5; } .fp-fig .l-accessory{ z-index:7; }
 :root{ --mq-l:#7d7972; --mq-e:#45444a; }
 :root[data-theme="light"]{ --mq-l:#ebe6dc; --mq-e:#b9b1a3; }
 .fp-hint{ position:absolute; left:0; right:0; bottom:8px; text-align:center; font-size:.62rem; color:var(--muted); z-index:7; transition:opacity .3s; }
@@ -937,7 +937,7 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-19.5';
+var LION_BUILD='2026-10-21.1';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -1545,12 +1545,51 @@ const FIT = (function(){
     // длинные рукава идут ниже подмышки отдельными кусками; у коротких это лишь скос края — его не тянем на руку
     let sideRows=0; for(let y=ya;y<=c.y1;y++){ const rs=R[y-c.y0], m=mid(rs); if(m && (rs.some(r=>r[1]<m[0]||r[0]>m[1]) || m[1]-m[0]+1>Wb*1.25)) sideRows++; }
     const longSl = sideRows > ch*.14;
+    // Согнутые рукава (на фото локоть и манжета заходят на корпус): рукав строим по его прямой части от плеча до локтя
+    // и тянем по руке манекена до запястья, а корпус там, где лежали манжеты, закрываем тканью корпуса чуть выше.
+    const bL0=cx-Wb*.5, bR0=cx+Wb*.5, mn0=Math.max(3,Wb*.06);
+    const slv=(y,side)=>{ const rs=R[y-c.y0]; if(!rs||!rs.length) return null;
+      if(side<0){ const l=rs[0][0]; return bL0-l>mn0 ? [l,Math.round(bL0)] : null; }
+      const r=rs[rs.length-1][1]; return r-bR0>mn0 ? [Math.round(bR0),r] : null; };
+    const elbow=side=>{ let last=ya, miss=0; for(let y=ya;y<=c.y1;y++){ if(slv(y,side)){ last=y; miss=0; } else if(++miss>ch*.03) break; } return last; };
+    const eL=elbow(-1), eR=elbow(1);
+    const bent = longSl && Math.min(eL,eR) < c.y1-ch*.15 && Math.min(eL,eR)-ya > ch*.06;
+    const Ywr=326, eMin=Math.min(eL,eR);
+    const z0=eMin-Math.round(ch*.03), z1=Math.min(c.y1-Math.round(ch*.09), Math.max(eL,eR)+Math.round((Math.max(eL,eR)-ya)*1.05));
+    // ткань корпуса для зоны манжет: медиана каждого столбца по полосе между подмышкой и локтем
+    // (молния и швы — вертикальные — сохраняются, логотипы и складки уходят); кладём её отдельной строкой в копию фото
+    let a2=a, fillY=0;
+    if(bent){
+      const w=a.w, h=a.h, d2=new Uint8ClampedArray(w*(h+2)*4); d2.set(a.d);
+      const r0=Math.round(ya+(eMin-ya)*.15), r1=Math.max(r0+3,eMin-Math.round(ch*.03)), xs=Math.max(c.x0,Math.round(bL0-Wb*.1)), xe=Math.min(c.x1,Math.round(bR0+Wb*.1));
+      const med=v=>{ v.sort((p,q)=>p-q); return v[v.length>>1]; };
+      // общий цвет ткани и цвет каждого столбца; столбец берём своим, только если он ровный по всей высоте (молния, шов),
+      // а логотипы и надписи (меняются сверху вниз) заменяем общим цветом ткани
+      const gR=[],gG=[],gB=[];
+      for(let y=r0;y<=r1;y+=2) for(let x=xs;x<=xe;x+=2){ const i=(y*w+x)*4; if(a.d[i+3]>128){ gR.push(a.d[i]); gG.push(a.d[i+1]); gB.push(a.d[i+2]); } }
+      const gc=gR.length?[med(gR),med(gG),med(gB)]:[128,128,128];
+      for(let x=xs;x<=xe;x++){ const R_=[],G_=[],B_=[]; for(let y=r0;y<=r1;y++){ const i=(y*w+x)*4; if(a.d[i+3]>128){ R_.push(a.d[i]); G_.push(a.d[i+1]); B_.push(a.d[i+2]); } }
+        if(R_.length<3) continue; const n=R_.length; let col=[med(R_.slice()),med(G_.slice()),med(B_.slice())];
+        let near=0; for(let k3=0;k3<n;k3++) if(Math.abs(R_[k3]-col[0])+Math.abs(G_[k3]-col[1])+Math.abs(B_[k3]-col[2])<45) near++;
+        if(near<n*.85) col=gc;
+        for(const yy of [h,h+1]){ const j=(yy*w+x)*4; d2[j]=col[0]; d2[j+1]=col[1]; d2[j+2]=col[2]; d2[j+3]=255; } }
+      a2=Object.assign({},a,{d:d2,h:h+2}); fillY=h;
+    }
+    if(bent){
+      for(const [side,eS] of [[-1,eL],[1,eR]]){
+        for(let yo=Math.floor(YA*S);yo<=Math.ceil(Ywr*S);yo++){
+          const Y=(yo+.5)/S, ar=M.arm(Y,side); if(!ar) continue;
+          let y=Math.round(pw([YA,Ywr],[ya,eS],Y)), p=slv(y,side); for(let k2=1;!p&&k2<8;k2++) p=slv(y-k2,side);
+          if(p) strip(o,a,y,p[0],p[1],ar[0]-2+dx,ar[1]+2+dx,yo,.9);
+        }
+      }
+    }
     let yk=1; for(let y=yb;y<ya;y++){ const r=R[y-c.y0]; if(r.length) yk=Math.max(yk,r[r.length-1][1]-r[0][0]+1); }   // самая широкая строка плеч с рукавами
-    // капюшон ложится за голову манекена (голова нарисована поверх вещей), рисуем его первым
+    // капюшон опущен: лежит вокруг шеи и за ней (голова манекена нарисована поверх вещей), рисуем его первым
     if(hood){
       const hws=[]; for(let y=c.y0;y<ys;y++){ const r=R[y-c.y0]; if(r.length) hws.push(r[r.length-1][1]-r[0][0]+1); }
       hws.sort((p,q)=>p-q); const hw=hws[Math.floor(hws.length*.8)]||1;             // ширина капюшона без торчащих кончиков плеч и шнурков
-      const kh=Math.min(k,88/hw), Hb=Yt+8, Ht=Math.max(22,Hb-(ys-c.y0)*kh);
+      const kh=Math.min(k,86/hw), Hb=Yt+12, Ht=Hb-Math.min(38,(ys-c.y0)*kh);
       for(let yo=Math.floor(Ht*S);yo<=Math.ceil(Hb*S);yo++){
         const Y=(yo+.5)/S, sy=pw([Ht,Hb],[c.y0,ys],Y), ri=Math.round(sy)-c.y0;
         if(ri<0||ri>=R.length||!R[ri].length) continue;
@@ -1575,10 +1614,10 @@ const FIT = (function(){
         const l=rs[0][0], r=rs[rs.length-1][1];
         strip(o,a,sy,l,r,200+(l-cx)*q+dx,200+(r+1-cx)*q+dx,yo);
       } else {
-        const m=mid(rs), tw=Math.max(t[1]-t[0],chest*.94/1)+2*e*(sc>1?sc:1);
-        const L=200-tw/2, Rr=200+tw/2;
+        const tw=Math.max(t[1]-t[0],chest*.94/1)+2*e*(sc>1?sc:1);
         // рукава ниже подмышки: куски строки за пределами корпуса идут на руки, остальное — корпус в пропорции
         const bL=cx-Wb*.5, bR=cx+Wb*.5, bs=tw/Wb, mn=Math.max(3,Wb*.06), body=[], left=[], right=[];
+        const iy=Math.round(sy), zone=bent && iy>=z0 && iy<=z1;
         for(const r of rs){
           if(longSl && r[1]<bL) left.push(r);                               // целиком левее корпуса
           else if(longSl && r[0]>bR) right.push(r);
@@ -1590,9 +1629,12 @@ const FIT = (function(){
             body.push([Math.max(a0,Math.round(bL-Wb*.08)),Math.min(a1,Math.round(bR+Wb*.08))]);
           }
         }
-        if(left.length && aL) strip(o,a,sy,left[0][0],left[left.length-1][1],aL[0]-2+dx,aL[1]+2+dx,yo,.9);
-        if(right.length && aR) strip(o,a,sy,right[0][0],right[right.length-1][1],aR[0]-2+dx,aR[1]+2+dx,yo,.9);
-        for(const r of body) if(r[1]-r[0]>=1) strip(o,a,sy,r[0],r[1],200+(r[0]-cx)*bs+dx,200+(r[1]+1-cx)*bs+dx,yo);
+        if(!bent && left.length && aL) strip(o,a,sy,left[0][0],left[left.length-1][1],aL[0]-2+dx,aL[1]+2+dx,yo,.9);
+        if(!bent && right.length && aR) strip(o,a,sy,right[0][0],right[right.length-1][1],aR[0]-2+dx,aR[1]+2+dx,yo,.9);
+        for(const r of body) if(r[1]-r[0]>=1){
+          if(zone){ const l=Math.max(r[0],Math.round(bL0-Wb*.08)), rr=Math.min(r[1],Math.round(bR0+Wb*.08));   // зона манжет: ровная ткань корпуса
+            strip(o,a2,fillY,l,rr,200+(l-cx)*bs+dx,200+(rr+1-cx)*bs+dx,yo); }
+          else strip(o,a,sy,r[0],r[1],200+(r[0]-cx)*bs+dx,200+(r[1]+1-cx)*bs+dx,yo); }
       }
     }
   }
@@ -2809,11 +2851,12 @@ function editProduct(id){
     <div class="fld"><label>Фото 1 (главное): ссылка</label><input class="inp" id="f_img1" value="${esc(imgField('f_img1',p.images[0]===PLACEHOLDER?'':p.images[0]))}" placeholder="https://..." onchange="fitEdRefresh()">
       <label class="filepick" style="margin-top:9px"><input type="file" accept="image/*" hidden onchange="pickImg(this,'f_img1')">Загрузить фото</label>
       <div class="cut-box" id="cut_f_img1"></div></div>
-    <div class="fld"><label>Фото 2 (при наведении): ссылка</label><input class="inp" id="f_img2" value="${esc(imgField('f_img2',p.images[1]))}" placeholder="https://...">
-      <label class="filepick" style="margin-top:9px"><input type="file" accept="image/*" hidden onchange="pickImg(this,'f_img2')">Загрузить фото</label></div>
+    <div class="fld"><label>Фото 2 (при наведении): ссылка</label><input class="inp" id="f_img2" value="${esc(imgField('f_img2',p.images[1]))}" placeholder="https://..." onchange="cutIdle2()">
+      <label class="filepick" style="margin-top:9px"><input type="file" accept="image/*" hidden onchange="pickImg(this,'f_img2')">Загрузить фото</label>
+      <div class="cut-box" id="cut_f_img2"></div></div>
     ${fitEdHTML(p)}`;
   TRY_IMG = p.tryImg || ''; delete CUT_SRC.f_img1;
-  fitEdRefresh(); cutIdle();
+  delete CUT_SRC.f_img2; fitEdRefresh(); cutIdle(); cutIdle2();
   $('#formSave').textContent='Сохранить';
   $('#formSave').onclick=saveProductForm;
   $('#formModal').classList.add('open'); document.body.classList.add('lock');
@@ -2904,6 +2947,7 @@ function pickImg(input,targetId){
       if(out.length>r.result.length && r.result.length<1500000) out=r.result;   // маленький файл оставляем как есть
       IMG_BUF[targetId]=out; $('#'+targetId).value=IMG_MARK;
       if(targetId==='f_img1'){ CUT_SRC.f_img1={canvas:c, orig:out, tol:50, off:false, card:false}; cutApply('f_img1'); return; }
+      if(targetId==='f_img2'){ CUT_SRC.f_img2={canvas:c, orig:out, tol:50, off:false}; cutApply('f_img2'); return; }
       toast('Фото загружено');
     };
     im.src=r.result;
@@ -2916,7 +2960,13 @@ function pickImg(input,targetId){
    Админ видит копию на «шахматке», может поменять силу обрезки, подправить кистью или не использовать её. */
 const CUT_SRC={};
 let TRY_IMG='';                                          // копия без фона для примерочной (поле товара tryImg)
-function setImg1(v){ if(String(v).indexOf('data:')===0){ IMG_BUF.f_img1=v; $('#f_img1').value=IMG_MARK; } else { delete IMG_BUF.f_img1; $('#f_img1').value=v||''; } }
+function setImg(id,v){ if(String(v).indexOf('data:')===0){ IMG_BUF[id]=v; $('#'+id).value=IMG_MARK; } else { delete IMG_BUF[id]; $('#'+id).value=v||''; } }
+const setImg1=v=>setImg('f_img1',v);
+/* фото 2: фон убирается прямо в карточке (как у фото 1 по галочке) */
+function cutIdle2(){
+  const box=$('#cut_f_img2'), v=imgVal('f_img2'); if(!box) return;
+  box.innerHTML = v && !cutoutImg(v) ? `<div class="cut-row"><button type="button" class="adm-mini" onclick="cutFromCurrent('f_img2')">Убрать фон с фото 2</button></div>` : '';
+}
 /* без новой загрузки: показываем, что есть, и даём сделать копию из текущего главного фото */
 function cutIdle(){
   const box=$('#cut_f_img1'); if(!box) return;
@@ -2927,13 +2977,13 @@ function cutIdle(){
        <button type="button" class="adm-mini" onclick="TRY_IMG='';cutIdle();fitEdRefresh()">Не использовать</button></div>`
     : (imgVal('f_img1') && !cutoutImg(imgVal('f_img1')) ? `<div class="cut-row"><button type="button" class="adm-mini" onclick="cutFromCurrent()">Подготовить фото для примерочной</button></div>` : '');
 }
-function cutFromCurrent(){
-  const src=imgVal('f_img1'); if(!src){ toast('Сначала добавьте главное фото'); return; }
+function cutFromCurrent(id='f_img1'){
+  const src=imgVal(id); if(!src){ toast('Сначала добавьте фото'); return; }
   const im=new Image();
   im.onload=()=>{ const k=Math.min(1,1200/Math.max(im.naturalWidth,im.naturalHeight)), c=document.createElement('canvas');
     c.width=Math.round(im.naturalWidth*k); c.height=Math.round(im.naturalHeight*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
     try{ c.getContext('2d').getImageData(0,0,1,1); }catch(e){ toast('Это фото с другого сайта, его не обработать. Загрузите его файлом.'); return; }
-    CUT_SRC.f_img1={canvas:c, orig:src, tol:50, off:false, card:false}; cutApply('f_img1'); };
+    CUT_SRC[id]={canvas:c, orig:src, tol:50, off:false, card:false}; cutApply(id); };
   im.onerror=()=>toast('Не получилось открыть фото. Загрузите его файлом.');
   if(src.indexOf('data:')!==0) im.crossOrigin='anonymous';
   im.src=src;
@@ -2953,14 +3003,16 @@ async function cutApply(id){
   st.cut = r.ok && !st.off;
   st.work=document.createElement('canvas'); st.work.width=st.canvas.width; st.work.height=st.canvas.height;
   st.work.getContext('2d').drawImage(st.cut ? r.canvas : st.canvas,0,0);
-  const msg = st.off ? 'Примерочная не использует это фото.'
+  const two = id==='f_img2';
+  const msg = two ? (st.off ? 'Оставлено исходное фото, с фоном.' : st.cut ? 'Фон убран. Если осталось лишнее или задело вещь, поменяйте силу обрезки или поправьте кистью прямо на фото.' : (r.reason+' Оставлено исходное фото.'))
+    : st.off ? 'Примерочная не использует это фото.'
     : st.cut ? 'Для примерочной сделана копия без фона, а в карточке остаётся ваше фото. Если осталось лишнее или задело вещь, поменяйте силу обрезки или поправьте кистью прямо на фото.'
     : (r.reason+' В примерочной будет показан рисунок вещи.');
-  box.innerHTML=`<div class="cut-h">Для примерочной</div><div class="cut-prev"><canvas id="cutc_${id}" aria-label="Результат"></canvas></div>
+  box.innerHTML=`${two?'':'<div class="cut-h">Для примерочной</div>'}<div class="cut-prev"><canvas id="cutc_${id}" aria-label="Результат"></canvas></div>
     <div class="cut-msg">${esc(msg)}</div>
     <div class="cut-row">${st.off?'':`<label class="cut-tol">Сила обрезки <input type="range" min="0" max="100" step="5" value="${st.tol}" onchange="CUT_SRC['${id}'].tol=+this.value;cutApply('${id}')"></label>`}
-      <button type="button" class="adm-mini" onclick="CUT_SRC['${id}'].off=!CUT_SRC['${id}'].off;cutApply('${id}')">${st.off?'Сделать копию без фона':'Не использовать'}</button></div>
-    ${st.cut?`<label class="cut-card"><input type="checkbox"${st.card?' checked':''} onchange="CUT_SRC['${id}'].card=this.checked;cutSave('${id}')"> В карточке товара тоже показывать без фона</label>`:''}
+      <button type="button" class="adm-mini" onclick="CUT_SRC['${id}'].off=!CUT_SRC['${id}'].off;cutApply('${id}')">${two?(st.off?'Убрать фон':'Вернуть как было'):(st.off?'Сделать копию без фона':'Не использовать')}</button></div>
+    ${st.cut&&!two?`<label class="cut-card"><input type="checkbox"${st.card?' checked':''} onchange="CUT_SRC['${id}'].card=this.checked;cutSave('${id}')"> В карточке товара тоже показывать без фона</label>`:''}
     ${st.cut?`<div class="cut-row cut-brush"><span class="cut-bl">Кисть</span>
       <button type="button" class="adm-mini${st.mode!=='keep'?' on':''}" onclick="cutMode('${id}','erase',this)">Стереть фон</button>
       <button type="button" class="adm-mini${st.mode==='keep'?' on':''}" onclick="cutMode('${id}','keep',this)">Вернуть вещь</button>
@@ -2977,6 +3029,7 @@ function cutSave(id,first){
   const st=CUT_SRC[id]; if(!st) return;
   let cut='';
   if(st.cut){ cut=st.work.toDataURL('image/webp',.9); if(cut.indexOf('data:image/webp')!==0) cut=st.work.toDataURL('image/png'); }
+  if(id==='f_img2'){ setImg('f_img2', cut||st.orig); if(first) toast(st.cut ? 'Фото 2 загружено, фон убран' : 'Фото загружено'); return; }
   TRY_IMG=cut;                                                     // копия для примерочной
   setImg1(st.card && cut ? cut : st.orig);                         // в карточке: своё фото (или без фона, если отмечено)
   if(first) toast(st.cut ? 'Фото загружено, копия без фона для примерочной готова' : 'Фото загружено');
@@ -3369,11 +3422,18 @@ $('#frFig').innerHTML = FIT.figHTML('fr');
 function currentLook(){ return LAYERS.map(l=>frLook[l]).filter(sel=>sel && frFind(sel.id)); }
 
 /* Tap the hanger on a product -> wear it (replace only its layer). Same item -> remove it. */
+/* одинаковые вещи друг на друга не надеваем: одна вещь из категории, одна куртка/худи/зипка */
+const OUTER_RE=/худи|зип|куртк|пальто|бомбер|жилет|пухов|ветровк|кардиган|пиджак|олимпийк|косух/i;
+const sameKind=(p,q)=> p.category===q.category || p.layer===q.layer || (OUTER_RE.test(p.category+' '+p.name) && OUTER_RE.test(q.category+' '+q.name));
 function frWear(id){
   const p=frFind(id); if(!p||!p.tryOn) return;
   const layer=p.layer;
   if(frLook[layer] && frLook[layer].id===id){ frLook[layer]=null; toast('Убрано из образа'); }
-  else { frLook[layer]={ id, size:firstSize(p) }; toast('Добавлено в образ'); openFitting(); }
+  else {
+    const off=[];
+    Object.keys(frLook).forEach(l=>{ const sel=frLook[l], q=sel&&frFind(sel.id); if(q && q.id!==id && sameKind(p,q)){ off.push(q.name); frLook[l]=null; } });
+    frLook[layer]={ id, size:firstSize(p) };
+    toast(off.length ? 'Заменено: '+off.join(', ') : 'Добавлено в образ'); openFitting(); }
   renderPanel(); renderShop();
 }
 function frSetSize(layer,size){ if(frLook[layer]) frLook[layer].size=size; renderPanel(); }
