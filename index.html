@@ -948,13 +948,54 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 @media (prefers-reduced-motion: reduce){ .ob-i{ animation:none; } }
 .fe.board .fe-stage, .fe.board .fe-r, .fe.board .adm-mini, .fe.board .fe-msg, .fe.board #f_pair{ display:none !important; }
 .fe.board .fe-wrap{ display:block; }
+
+/* ===== Примерочная компактнее и передвигается (компьютер) ===== */
+.fp-drag{ display:none; }
+@media (min-width:561px){
+  #frPanel{ width:300px; max-height:min(84vh,660px); }
+  #frPanel.moving{ transition:none; box-shadow:0 40px 90px -24px rgba(0,0,0,.95); }
+  #frPanel .fp-head{ padding:12px 12px 12px 16px; cursor:grab; user-select:none; -webkit-user-select:none; touch-action:none; align-items:center; gap:8px; }
+  #frPanel.moving .fp-head{ cursor:grabbing; }
+  #frPanel .fp-head > div:first-child{ flex:1; min-width:0; }
+  #frPanel .fp-t{ font-size:1.05rem; }
+  #frPanel .fp-drag{ display:block; width:10px; height:16px; flex:none; opacity:.55; background:radial-gradient(circle, var(--muted) 1.2px, transparent 1.6px) 0 0/5px 5px; }
+  #frPanel .fp-stage{ margin:10px 12px 0; height:clamp(220px,34vh,276px); }
+  #frPanel .fp-picks{ padding:10px 12px 2px; }
+  #frPanel .fp-pick-row{ gap:8px; }
+  #frPanel .fp-total{ margin:2px 14px 0; padding-top:10px; }
+  #frPanel .fp-foot{ padding:10px 12px 12px; }
+  #frPanel .fp-foot .btn{ padding-block:13px; }
+  #frPanel .fp-reset{ margin-top:8px; padding:9px; }
+}
+/* ===== Телефон ===== */
+@media (max-width:560px){
+  /* примерочная ниже, больше места странице */
+  #frPanel .fp-body{ height:clamp(108px,16svh,146px); }
+  #frPanel .fp-stage{ max-width:112px; }
+  #frPanel .fp-foot{ padding:6px 12px 8px; padding-bottom:max(8px, env(safe-area-inset-bottom, 0px)); }
+  #frPanel .fp-foot .btn, #frPanel .fp-foot .fp-reset{ min-height:42px; }
+  #frPanel .fp-foot .btn, #frPanel .fp-reset{ font-size:.68rem; }
+  .fp-hint{ font-size:.6rem; }
+  /* кнопки в шапке и ссылки: удобная площадь касания (не меньше 40 пикселей) */
+  .icn{ min-width:38px; min-height:40px; justify-content:center; }
+  .brand, .brand span{ white-space:nowrap; }
+  .nav-r{ gap:0 !important; }
+  .fcol a{ padding:7px 0; margin-bottom:2px; }
+  .finfo .fi a{ display:inline-block; padding:6px 0; }
+  .fbot .flinks a{ display:inline-block; padding:8px 0; }
+  .fbot .flinks{ gap:6px 20px; }
+  /* мелкие подписи чуть крупнее */
+  .fp-pick-n{ font-size:.6rem; }
+  .fp-pick-x{ width:36px; height:36px; }
+}
+@media (max-width:374px){ .icn{ min-width:34px; } .brand{ letter-spacing:.12em; gap:7px; } .brand img{ width:32px; height:32px; } }
 </style>
 <script>(function(){try{var t=localStorage.getItem('lionTheme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <script>
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-21.3';
+var LION_BUILD='2026-10-21.4';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -1184,6 +1225,7 @@ var LION_BUILD='2026-10-21.3';
   <div class="fp-head">
     <div><div class="fp-t">Примерочная</div><div class="fp-sub">Нажмите на вешалку у товара, чтобы примерить.</div></div>
     <span class="fp-hsum" id="frHSum"></span>
+    <span class="fp-drag" aria-hidden="true" title="Перетащите, чтобы передвинуть"></span>
     <button class="xbtn" onclick="closeFitting()" aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="fp-body">
@@ -3559,6 +3601,24 @@ function frToggleBig(force){
   pn.addEventListener('touchend',()=>{ if(y0===null) return; pn.classList.remove('drag'); pn.style.transform=''; y0=null;
     if(dy>70){ if(pn.classList.contains('big')) frToggleBig(false); else closeFitting(); }
     else if(dy<-50) frToggleBig(true); });
+})();
+(function(){ /* перетаскивание примерочной за шапку (на компьютере); место запоминается, двойной щелчок возвращает на место */
+  const pn=document.getElementById('frPanel'), hd=pn&&pn.querySelector('.fp-head'); if(!hd) return;
+  const KEY='fr_pos', desk=()=>innerWidth>560; let st=null;
+  const place=(x,y)=>{ const r=pn.getBoundingClientRect();
+    x=Math.max(8,Math.min(innerWidth-r.width-8,x)); y=Math.max(8,Math.min(innerHeight-r.height-8,y));
+    pn.style.left=x+'px'; pn.style.top=y+'px'; pn.style.bottom='auto'; };
+  const reset=()=>{ pn.style.left=pn.style.top=pn.style.bottom=''; };
+  const restore=()=>{ if(!desk()){ reset(); return; } let p=null; try{ p=JSON.parse(localStorage.getItem(KEY)); }catch(e){} if(p) place(p[0],p[1]); };
+  hd.addEventListener('pointerdown',e=>{ if(!desk() || e.button || e.target.closest('button,a,select,input')) return;
+    const r=pn.getBoundingClientRect(); st={dx:e.clientX-r.left, dy:e.clientY-r.top}; hd.setPointerCapture(e.pointerId); pn.classList.add('moving'); e.preventDefault(); });
+  hd.addEventListener('pointermove',e=>{ if(st) place(e.clientX-st.dx, e.clientY-st.dy); });
+  const end=()=>{ if(!st) return; st=null; pn.classList.remove('moving'); const r=pn.getBoundingClientRect(); try{ localStorage.setItem(KEY,JSON.stringify([Math.round(r.left),Math.round(r.top)])); }catch(e){} };
+  hd.addEventListener('pointerup',end); hd.addEventListener('pointercancel',end);
+  hd.addEventListener('dblclick',e=>{ if(e.target.closest('button')) return; reset(); try{ localStorage.removeItem(KEY); }catch(e){} });
+  addEventListener('resize',()=>{ clearTimeout(restore.t); restore.t=setTimeout(restore,150); });
+  if(window.ResizeObserver) new ResizeObserver(()=>{ if(desk() && pn.style.top && !st){ const r=pn.getBoundingClientRect(); place(r.left,r.top); } }).observe(pn);   // панель выросла: не даём уйти за край
+  restore();
 })();
 function toggleFitting(){ $('#frPanel').classList.contains('open') ? closeFitting() : openFitting(); }
 
