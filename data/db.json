@@ -1,7 +1,7 @@
 {
  "_v": 2,
- "_rev": 1792451123775,
- "_date": "2026-10-19T23:05:23.775Z",
+ "_rev": 1792607557617,
+ "_date": "2026-10-21T18:32:37.617Z",
  "products": [
   {
    "id": "lion-tee",
@@ -82,7 +82,10 @@
    "description": "Приталенный крой, плотный хлопок, не мнётся за день.",
    "price": 5900,
    "oldPrice": null,
-   "images": [],
+   "images": [
+    "images/p/shirt-black-1-mvig97u3.png",
+    "images/p/shirt-black-2-mvig97u3.png"
+   ],
    "colors": [
     "Чёрный",
     "Тёмно-синий"
@@ -101,13 +104,33 @@
     "XL": 1,
     "XXL": 1
    },
+   "specs": [
+    {
+     "k": "Материал",
+     "v": "Хлопок с эластаном"
+    },
+    {
+     "k": "Крой",
+     "v": "Приталенный"
+    },
+    {
+     "k": "Воротник",
+     "v": "Классический"
+    }
+   ],
+   "newArrival": true,
+   "sale": false,
+   "featured": true,
    "where": [
     "grozny",
     "shali"
    ],
-   "featured": true,
-   "newArrival": true,
-   "sale": false
+   "fit": {
+    "s": 1.52,
+    "b": 0.08,
+    "w": 0.05,
+    "t": 0.16
+   }
   },
   {
    "id": "shirt-white",
@@ -214,8 +237,8 @@
    "price": 18900,
    "oldPrice": 21900,
    "images": [
-    "images/p/jacket-leather-1-mvfv4apk.png",
-    "images/p/jacket-leather-2-mvfv4apk.png"
+    "images/p/jacket-leather-1-mvig97u3.png",
+    "images/p/jacket-leather-2-mvig97u3.png"
    ],
    "colors": [
     "Чёрный",
@@ -254,10 +277,7 @@
     "grozny",
     "shali"
    ],
-   "fit": {
-    "s": 0.96,
-    "y": 4
-   }
+   "tryImg": "images/p/jacket-leather-1-mvig97u3.png"
   },
   {
    "id": "hoodie-zip",
@@ -384,10 +404,13 @@
    "description": "Плотный деним, прямой крой, классическая посадка.",
    "price": 7400,
    "oldPrice": null,
-   "images": [],
+   "images": [
+    "images/p/jeans-straight-1-mvig97u3.png",
+    "images/p/jeans-straight-2-mvig97u3.jpg"
+   ],
    "colors": [
-    "Тёмно-синий",
-    "Чёрный"
+    "Чёрный",
+    "Тёмно-синий"
    ],
    "sizes": [
     "S",
@@ -403,13 +426,28 @@
     "XL": 1,
     "XXL": 1
    },
+   "specs": [
+    {
+     "k": "Материал",
+     "v": "Деним"
+    },
+    {
+     "k": "Крой",
+     "v": "Прямой"
+    },
+    {
+     "k": "Посадка",
+     "v": "Средняя"
+    }
+   ],
+   "newArrival": true,
+   "sale": false,
+   "featured": false,
    "where": [
     "grozny",
     "shali"
    ],
-   "featured": false,
-   "newArrival": true,
-   "sale": false
+   "tryImg": "images/p/jeans-straight-1-mvig97u3.png"
   },
   {
    "id": "shoes-classic",
@@ -455,8 +493,8 @@
    "price": 9900,
    "oldPrice": 11900,
    "images": [
-    "images/p/sneak-white-1-mvfv4apk.png",
-    "images/p/sneak-white-1-mvfv4apk.png"
+    "images/p/sneak-white-1-mvig97u3.png",
+    "images/p/sneak-white-2-mvig97u3.jpg"
    ],
    "colors": [
     "Чёрный",
@@ -494,7 +532,9 @@
    "where": [
     "grozny",
     "shali"
-   ]
+   ],
+   "tryLayer": "shoes",
+   "tryImg": "images/p/sneak-white-1-mvig97u3.png"
   }
  ],
  "categories": [
@@ -558,7 +598,6 @@
     "id": "lk3",
     "name": "Вечер",
     "items": [
-     "shirt-black",
      "jacket-leather",
      "pants-classic",
      "shoes-classic"
