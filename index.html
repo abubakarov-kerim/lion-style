@@ -938,7 +938,10 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 .try-board .ob{ display:block; } html:not(.try-board) .ob{ display:none; }
 .ob-i{ position:absolute; margin:0; display:grid; place-items:center; animation:obIn .5s cubic-bezier(.16,1,.3,1) both; animation-delay:var(--d,0ms); }
 .ob-i img{ width:100%; height:100%; display:block; }
-.ob-i.cut img{ object-fit:contain; filter:drop-shadow(0 10px 14px rgba(4,10,24,.38)); }
+.ob-i.cut img{ object-fit:contain; filter:drop-shadow(0 0 1.2px rgba(236,240,248,.6)) drop-shadow(0 10px 14px rgba(4,10,24,.4)); }
+/* светлая «подсветка» под вещами, чтобы тёмная одежда не терялась на тёмном фоне */
+.try-board .fp-stage, .try-board .lk-stage{ background:radial-gradient(75% 70% at 50% 45%, color-mix(in srgb, var(--card2) 55%, #8a93a6 45%), var(--card) 88%); }
+.ob-i.cut::before{ content:""; position:absolute; inset:-6%; z-index:-1; border-radius:50%; background:radial-gradient(closest-side, rgba(220,226,238,.16), transparent); }
 .ob-i.ph{ padding:4px; background:var(--card); border:1px solid var(--line); box-shadow:0 10px 24px rgba(4,10,24,.32); }
 .ob-i.ph img{ object-fit:cover; }
 @keyframes obIn{ from{ opacity:0; transform:translateY(10px) scale(.97); } to{ opacity:1; transform:none; } }
@@ -951,7 +954,7 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-21.2';
+var LION_BUILD='2026-10-21.3';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -2251,7 +2254,7 @@ function boardHTML(items){
   const z={tops:2,outerwear:3,bottoms:1,shoes:4,accessory:5};
   return items.map((p,i)=>{ const r=S[p.layer]; if(!r) return '';
     return `<figure class="ob-i ${p.boardCut?'cut':'ph'}" style="left:${r[0]}%;top:${r[1]}%;width:${r[2]}%;height:${r[3]}%;z-index:${z[p.layer]||1};--d:${i*60}ms">
-      <img src="${esc(p.tryOn)}" alt="${esc(p.name)}" loading="lazy"></figure>`; }).join('');
+      <img src="${esc(p.tryOn)}" alt="${esc(p.name)}" decoding="async"></figure>`; }).join('');
 }
 /* Накладываем слои примерки и характеристики на загруженные товары */
 function applyMeta(list){
