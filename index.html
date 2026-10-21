@@ -989,13 +989,21 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
   .fp-pick-x{ width:36px; height:36px; }
 }
 @media (max-width:374px){ .icn{ min-width:34px; } .brand{ letter-spacing:.12em; gap:7px; } .brand img{ width:32px; height:32px; } }
+
+/* ===== «Невидимый манекен» ===== */
+.gh{ position:absolute; top:3%; height:94%; left:50%; aspect-ratio:2/3; transform:translateX(-50%); }
+.gh > svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.gh .gh-b{ z-index:0; } .gh .gh-f{ z-index:5; }
+.gh .gh-i.ph{ padding:2px; }
+.gh .gh-full{ inset:0; width:100%; height:100%; } .gh .gh-full img{ object-fit:contain; filter:drop-shadow(0 6px 10px rgba(4,10,24,.35)); }
+.lk-stage .gh{ top:4%; height:92%; }
 </style>
 <script>(function(){try{var t=localStorage.getItem('lionTheme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <script>
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-21.4';
+var LION_BUILD='2026-10-21.5';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -1387,6 +1395,16 @@ const FIT = (function(){
   const ARM = both(tube(ARM_C,[15,13.5,12,10.5,9]));
   const HAND = both(smooth([[279,334],[290,336],[294,356],[291,374],[284,384],[277,378],[275,356]]));
   const NECK = smooth([[188,82],[212,82],[213,100],[216,110],[200,113],[184,110],[187,100]]);
+  const FEET = both(smooth([[209,530],[229,530],[231,550],[238,560],[247,569],[245,577],[211,577],[205,562],[206,544]]));
+  /* «невидимый манекен»: только голова, шея, кисти и стопы. back — под вещами, front — над ними (голова) */
+  function ghost(id,feet){
+    const g=`<defs><linearGradient id="${id}b" x1="0" x2="1"><stop offset="0" style="stop-color:var(--mq-e)"/><stop offset=".5" style="stop-color:var(--mq-l)"/><stop offset="1" style="stop-color:var(--mq-e)"/></linearGradient>
+      <radialGradient id="${id}h" cx=".42" cy=".36" r=".75"><stop offset="0" style="stop-color:var(--mq-l)"/><stop offset="1" style="stop-color:var(--mq-e)"/></radialGradient></defs>`;
+    const f=`fill="url(#${id}b)"`;
+    return { back:`<svg class="gh-b" viewBox="0 0 400 600" aria-hidden="true">${g}<ellipse cx="200" cy="582" rx="70" ry="7" fill="#000" opacity=".28"/>
+        <path d="${NECK}" ${f}/><path d="${HAND[0]}" ${f}/><path d="${HAND[1]}" ${f}/>${feet?`<path d="${FEET[0]}" ${f}/><path d="${FEET[1]}" ${f}/>`:''}</svg>`,
+      front:`<svg class="gh-f" viewBox="0 0 400 600" aria-hidden="true">${g.replace(/id="(\w+)"/g,'id="$1x"')}<ellipse cx="200" cy="61" rx="25" ry="31" fill="url(#${id}hx)"/></svg>` };
+  }
   function mannequin(id){
     const g=`<defs><linearGradient id="${id}b" x1="0" x2="1"><stop offset="0" style="stop-color:var(--mq-e)"/><stop offset=".5" style="stop-color:var(--mq-l)"/><stop offset="1" style="stop-color:var(--mq-e)"/></linearGradient>
       <radialGradient id="${id}h" cx=".42" cy=".36" r=".75"><stop offset="0" style="stop-color:var(--mq-l)"/><stop offset="1" style="stop-color:var(--mq-e)"/></radialGradient></defs>`;
@@ -1834,7 +1852,7 @@ const FIT = (function(){
     el.style.clipPath = (l||r) ? `inset(0 ${r.toFixed(2)}% 0 ${l.toFixed(2)}%)` : '';
   }
   const figHTML = pre => mannequin(pre)+['shoes','bottoms','tops','outerwear','accessory'].map(l=>`<img class="l-${l}" id="${pre}-${l}" alt="">`).join('');
-  return { mannequin, figHTML, demo, analyze, prepare, wear, plain, off, under };
+  return { mannequin, ghost, figHTML, demo, analyze, prepare, wear, plain, off, under };
 })();
 </script>
 <script>
@@ -2272,9 +2290,10 @@ function fitVerify(){
 }
 const LAYERS_ALL=['shoes','bottoms','tops','outerwear','accessory'];
 /* Режим примерочной: 'board' — «Собери образ» (вещи раскладываются на одном экране, фото без искажений),
+   'ghost' — «невидимый манекен»: голова, кисти и стопы, вещи стоят между ними как есть, без растягивания,
    'mannequin' — прежний манекен (код сохранён, чтобы вернуть его, поменяйте значение) */
-const TRY_MODE='board';
-document.documentElement.classList.toggle('try-board', TRY_MODE==='board');
+const TRY_MODE='ghost';
+document.documentElement.classList.toggle('try-board', TRY_MODE!=='mannequin');
 /* Фото годится для примерки, если это вырезанная вещь на прозрачном фоне (PNG / WebP) */
 const cutoutImg = u => typeof u==='string' && !cutImg(u) && (/^data:image\/(png|webp)/i.test(u) || /\.(png|webp)(\?|#|$)/i.test(u));
 
@@ -2298,15 +2317,32 @@ function boardHTML(items){
     return `<figure class="ob-i ${p.boardCut?'cut':'ph'}" style="left:${r[0]}%;top:${r[1]}%;width:${r[2]}%;height:${r[3]}%;z-index:${z[p.layer]||1};--d:${i*60}ms">
       <img src="${esc(p.tryOn)}" alt="${esc(p.name)}" decoding="async"></figure>`; }).join('');
 }
+/* «Невидимый манекен»: места вещей в координатах манекена 400×600 (x, y, ширина, высота, к какому краю прижать) */
+const GH_BOX={ accessory:[156,10,88,62,'bottom'], outerwear:[98,94,204,250,'top'], tops:[108,96,184,236,'top'],
+  bottoms:[116,262,168,278,'bottom'], shoes:[132,516,136,74,'bottom'] };
+let ghN=0;
+function ghostHTML(items){
+  const has={}; items.forEach(p=>{ if(GH_BOX[p.layer]) has[p.layer]=p; });
+  const z={bottoms:1,shoes:2,tops:3,outerwear:4,accessory:6}, parts=FIT.ghost('gh'+(++ghN), !has.shoes);
+  const tb = has.outerwear && has.tops ? [126,96,148,214,'top'] : null;          // под курткой футболка чуть уже, видна у ворота
+  const figs=Object.values(has).map((p,i)=>{
+    if(p.ghostSrc && p.layer==='tops' && has.outerwear && !has.outerwear.ghostSrc) return '';   // рисунок футболки шире настоящей куртки и торчал бы по бокам
+    if(p.ghostSrc) return `<figure class="ob-i gh-full" style="z-index:${z[p.layer]};--d:${i*60}ms"><img src="${esc(p.ghostSrc)}" alt="${esc(p.name)}"></figure>`;
+    const r=(p.layer==='tops'&&tb)||GH_BOX[p.layer];
+    return `<figure class="ob-i gh-i ${p.boardCut?'cut':'ph'}" style="left:${r[0]/4}%;top:${r[1]/6}%;width:${r[2]/4}%;height:${r[3]/6}%;z-index:${z[p.layer]};--d:${i*60}ms">
+      <img src="${esc(p.tryOn)}" alt="${esc(p.name)}" decoding="async" style="object-position:center ${r[4]}"></figure>`; }).join('');
+  return `<div class="gh">${parts.back}${figs}${parts.front}</div>`;
+}
+const outfitHTML = items => TRY_MODE==='ghost' ? ghostHTML(items) : boardHTML(items);
 /* Накладываем слои примерки и характеристики на загруженные товары */
 function applyMeta(list){
   list.forEach(p=>{
     p.layer=null; p.tryOn=null; p.tryThumb=null; p.tryFit=false;
     const own=(p.tryImg && cutoutImg(p.tryImg)) ? p.tryImg : (p.images||[])[0], fl=tryLayerOf(p), dm=p.tryLayer==='none'?null:FIT.demo(p.id);
-    if(TRY_MODE==='board'){                                                      // «Собери образ»: подходит любое фото товара
+    if(TRY_MODE!=='mannequin'){                                                      // «Собери образ»: подходит любое фото товара
       const img=(p.images||[])[0], ph=img && img!==PLACEHOLDER && !EXT_DEMO.test(img), lay=fl||(dm&&dm.layer)||null;
       const src = cutoutImg(own) ? own : ph ? img : dm ? dm.thumb : null;
-      if(lay && src){ p.layer=lay; p.tryOn=src; p.tryThumb=src; p.boardCut=!!(cutoutImg(own)||(!ph&&dm)); }
+      if(lay && src){ p.layer=lay; p.tryOn=src; p.tryThumb=src; p.boardCut=!!(cutoutImg(own)||(!ph&&dm)); p.ghostSrc=(!cutoutImg(own)&&!ph&&dm)?dm.src:null; }   // ghostSrc: рисунок-образец уже нарисован по фигуре
     }
     else if(fl && cutoutImg(own) && !FIT_BAD.has(own)){ p.layer=fl; p.tryOn=own; p.tryThumb=own; p.tryFit=true; }      // своё фото вещи на прозрачном фоне
     else if(dm){ p.layer=dm.layer; p.tryOn=dm.src; p.tryThumb=dm.thumb; p.tryFit=false; }                       // встроенный рисунок-демо
@@ -2831,7 +2867,7 @@ function renderLooks(){
   $('#looks').hidden = !L.length && !isAdmin();
   g.innerHTML = L.map(({lk,items},i)=>{ const sum=items.reduce((t,p)=>t+(+p.price||0),0);
     return `<article class="lk-card">
-      <div class="lk-stage">${TRY_MODE==='board' ? `<div class="ob">${boardHTML(items.filter(p=>p.tryOn))}</div>` : `<div class="fp-fig">${FIT.figHTML('lk'+i)}</div>`}</div>
+      <div class="lk-stage">${TRY_MODE!=='mannequin' ? `<div class="ob">${outfitHTML(items.filter(p=>p.tryOn))}</div>` : `<div class="fp-fig">${FIT.figHTML('lk'+i)}</div>`}</div>
       <div class="lk-info">
         <h3 class="lk-name">${esc(lk.name)}</h3>
         <div class="lk-items">${items.map(p=>esc(p.name)).join(', ')}</div>
@@ -2955,7 +2991,7 @@ const FE_SL = [ ['s','Размер',50,170,100,'%'], ['y','Выше / ниже',
 function fitEdHTML(p){
   const f=p.fit||{}, L=[['','Автоматически (по категории)'],['tops','Верх: футболка, рубашка, свитшот'],['outerwear','Верхняя одежда: худи, куртка, пальто'],['bottoms','Низ: брюки, джинсы, шорты'],['shoes','Обувь'],['accessory','Головной убор'],['none','Не показывать в примерочной']];
   const val=k=> k==='s' ? Math.round((+f.s||1)*100) : 'tbw'.includes(k) ? Math.round((+f[k]||0)*100) : Math.round(+f[k]||0);
-  return `<div class="fld fe${TRY_MODE==='board'?' board':''}" id="fitEd"><label>${TRY_MODE==='board'?'Примерочная: куда положить вещь в образе':'Примерочная: как вещь сидит на манекене'}</label>
+  return `<div class="fld fe${TRY_MODE!=='mannequin'?' board':''}" id="fitEd"><label>${TRY_MODE!=='mannequin'?'Примерочная: куда положить вещь в образе':'Примерочная: как вещь сидит на манекене'}</label>
     <div class="fe-wrap">
       <div class="fp-stage fe-stage"><div class="fp-fig" id="feFig">${FIT.figHTML('fe')}</div></div>
       <div class="fe-ctl">
@@ -3537,7 +3573,7 @@ function frAddAll(){
 
 let frGen=0;
 function renderPanel(){
-  if(TRY_MODE==='board') return renderBoard();
+  if(TRY_MODE!=='mannequin') return renderBoard();
   // model layers
   const put={}, gen=++frGen;
   LAYERS.forEach(layer=>{
@@ -3580,7 +3616,7 @@ function renderBoard(){
   LAYERS.forEach(l=>{ const sel=frLook[l], p=sel&&frFind(sel.id); if(sel && (!p || !p.tryOn || p.layer!==l)) frLook[l]=null; });
   const look=currentLook(), items=look.map(sel=>frFind(sel.id)), b=$('#frBoard');
   const key=items.map(p=>p.id).join(',');
-  if(b.dataset.k!==key){ b.dataset.k=key; b.innerHTML=boardHTML(items); b.setAttribute('aria-label', items.length ? 'Ваш образ: '+items.map(p=>p.name).join(', ') : 'Образ пуст'); }
+  if(b.dataset.k!==key){ b.dataset.k=key; b.innerHTML=outfitHTML(items); b.setAttribute('aria-label', items.length ? 'Ваш образ: '+items.map(p=>p.name).join(', ') : 'Образ пуст'); }
   $('#frHint').textContent='Нажмите на вешалку у товара, чтобы добавить его в образ';
   $('#frHelp').textContent='Вещь того же вида заменяет выбранную.';
   renderPicks(look);                                                // список вещей и итог — общие с манекеном
