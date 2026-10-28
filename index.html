@@ -1094,7 +1094,7 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-28.1';
+var LION_BUILD='2026-10-28.2';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -2515,6 +2515,7 @@ function loadData(){
   // фильтр цены стоял на максимуме — двигаем его вместе с новым максимумом, иначе более дорогой товар скрывался
   try{ if(filters.price>=was || filters.price>PRICE_MAX) filters.price=PRICE_MAX; }catch(e){}
   setTimeout(fitVerify,600);      // проверяем свои фото для примерки (нет ли у них фона)
+  try{ syncSaved(); }catch(e){}
 }
 loadData();
 
@@ -2523,7 +2524,16 @@ const esc = s => String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&
 const jsq = s => esc(JSON.stringify(String(s)));   // текст как безопасная строка внутри onclick
 
 /* ===== STATE ===== */
-let cart = [], wishlist = [];
+/* корзина и избранное хранятся в браузере покупателя и остаются после повторного захода */
+const SAVE_KEY={cart:'lion_cart', wish:'lion_wish'};
+const loadSaved=(k)=>{ try{ const v=JSON.parse(localStorage.getItem(k)||'[]'); return Array.isArray(v)?v:[]; }catch(e){ return []; } };
+let cart = loadSaved(SAVE_KEY.cart).filter(c=>c&&c.key&&c.id&&c.qty>0), wishlist = loadSaved(SAVE_KEY.wish).filter(x=>typeof x==='string');
+function saveCartWish(){ try{ localStorage.setItem(SAVE_KEY.cart,JSON.stringify(cart)); localStorage.setItem(SAVE_KEY.wish,JSON.stringify(wishlist)); }catch(e){} }
+/* после загрузки товаров: свежие цены, названия и фото в сохранённой корзине */
+function syncSaved(){
+  cart.forEach(c=>{ const p=PRODUCTS.find(x=>x.id===c.id); if(p){ c.price=p.price; c.name=p.name; c.img=pimg(p,0); c.illus=pcls(p,0); } });
+  if(document.getElementById('cartCount')) updateCounts();
+}
 let gridCols = 4;
 let filters = { cats:new Set(), sizes:new Set(), colors:new Set(), price:PRICE_MAX };
 let viewMode = 'all'; // all | new | sale
@@ -2720,8 +2730,9 @@ function toggleWish(id){
 }
 function renderWish(){
   const b=$('#wishBody');
-  if(!wishlist.length){ b.innerHTML='<div class="emptyd">В избранном пусто.</div>'; return; }
-  b.innerHTML = wishlist.map(id=>{ const p=PRODUCTS.find(x=>x.id===id);
+  const ids=wishlist.filter(id=>PRODUCTS.some(x=>x.id===id));
+  if(!ids.length){ b.innerHTML='<div class="emptyd">В избранном пусто.</div>'; return; }
+  b.innerHTML = ids.map(id=>{ const p=PRODUCTS.find(x=>x.id===id);
     return `<div class="citem">
       <img src="${pimg(p,0)}" class="${pcls(p,0)}" alt="" onclick="closeAll();openProduct('${p.id}')" style="cursor:pointer">
       <div><div class="cn">${esc(p.name)}</div><div class="cv">${eur(p.price)}</div>
@@ -2787,6 +2798,7 @@ function sendOrder(ch){
   window.open(url,'_blank','noopener');
 }
 function updateCounts(){
+  saveCartWish();
   const c=cart.reduce((s,i)=>s+i.qty,0);
   const cc=$('#cartCount'); cc.textContent=c; cc.style.display=c?'grid':'none';
   const wc=$('#wishCount'); wc.textContent=wishlist.length; wc.style.display=wishlist.length?'grid':'none';
