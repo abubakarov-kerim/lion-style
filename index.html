@@ -1078,6 +1078,35 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
   .rr-b{ min-height:40px; }
 }
 @media (prefers-reduced-motion: reduce){ .rr-c{ transition:none; } }
+/* ===== «Образ в полный рост» ===== */
+.stk-w{ position:absolute; inset:0; display:grid; grid-template-rows:minmax(0,1fr) auto; gap:6px; padding-bottom:8px; }
+.stk{ position:relative; min-height:0; overflow:hidden; }
+.ob > .stk{ position:absolute; inset:0; }
+.stk-i{ position:absolute; margin:0; visibility:hidden; }
+.stk-i.on{ visibility:visible; }
+.stk-i.new.on{ animation:stkIn .6s cubic-bezier(.16,1,.3,1) both; animation-delay:var(--d,0ms); }
+@keyframes stkIn{ from{ opacity:0; transform:translateY(-18px); } to{ opacity:1; transform:none; } }
+.stk-i img{ position:absolute; display:block; max-width:none; }
+.stk-i.cut img{ filter:drop-shadow(0 0 1.2px rgba(236,240,248,.55)) drop-shadow(0 12px 14px rgba(4,10,24,.42)); }
+.stk-i.ph{ overflow:hidden; background:var(--card); border:1px solid var(--line); box-shadow:0 10px 24px rgba(4,10,24,.32); }
+.stk-i.ph img{ inset:0; width:100%; height:100%; object-fit:cover; }
+.stk-v{ position:absolute; display:grid; place-items:center; border:1px dashed var(--line2); border-radius:var(--r-xs,0); opacity:.75; pointer-events:none; }
+.stk-v[hidden]{ display:none; }
+.stk-v span{ font-size:.56rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.stk-a{ position:absolute; z-index:8; width:34px; height:44px; transform:translateY(-50%); display:grid; place-items:center; color:var(--muted); transition:color .2s; }
+.stk-a[hidden]{ display:none; }
+.stk-a.l{ left:2px; } .stk-a.r{ right:2px; }
+.stk-a svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.6; }
+.stk-a:hover{ color:var(--amber); } .stk-a:active{ transform:translateY(-50%) scale(.9); } .stk-a:disabled{ opacity:.25; cursor:default; }
+.try-board #frStage:has(.stk-w) .fp-hint{ display:none; }
+@media (min-width:561px){ #frPanel .fp-stage:has(.stk-w){ height:clamp(250px,36vh,316px); } }
+@media (max-width:560px){
+  #frPanel:not(.big) .stk-a, #frPanel:not(.big) .stk-w .rr-acts{ display:none; }
+  #frPanel:not(.big) .stk-w{ padding:0; grid-template-rows:minmax(0,1fr); }
+  #frPanel.big .fp-stage:has(.stk-w){ height:min(62svh,500px); }
+  .stk-a{ width:42px; height:48px; }
+}
+@media (prefers-reduced-motion: reduce){ .stk-i.new.on{ animation:none; } }
 /* окно обложки */
 .cv{ position:fixed; inset:0; z-index:420; display:grid; place-items:center; padding:16px; background:rgba(3,7,15,.78); opacity:0; transition:opacity .25s; }
 .cv[hidden]{ display:none; } .cv.open{ opacity:1; }
@@ -1094,7 +1123,7 @@ footer{ border-top:1px solid rgba(200,170,114,.2); background:linear-gradient(18
 /* АВТООБНОВЛЕНИЕ: браузер может показывать старую сохранённую копию сайта.
    Сверяем номер версии с сервером и, если вышла новая, сами открываем её.
    При каждой публикации менять LION_BUILD. */
-var LION_BUILD='2026-10-28.2';
+var LION_BUILD='2026-10-28.3';
 (function(){
   if(location.protocol.indexOf('http')!==0 || !window.fetch) return;
   fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():''; }).then(function(t){
@@ -2398,7 +2427,7 @@ const LAYERS_ALL=['shoes','bottoms','tops','outerwear','accessory'];
    'rail' — «Вешалка»: вещи висят на плечиках на золотой перекладине, обувь стоит на полке,
    'ghost' — «невидимый манекен»: голова, кисти и стопы, вещи стоят между ними как есть, без растягивания,
    'mannequin' — прежний манекен (код сохранён, чтобы вернуть его, поменяйте значение) */
-const TRY_MODE='reel';
+const TRY_MODE='stack';
 document.documentElement.classList.toggle('try-board', TRY_MODE!=='mannequin');
 /* Фото годится для примерки, если это вырезанная вещь на прозрачном фоне (PNG / WebP) */
 const cutoutImg = u => typeof u==='string' && !cutImg(u) && (/^data:image\/(png|webp)/i.test(u) || /\.(png|webp)(\?|#|$)/i.test(u));
@@ -2476,7 +2505,114 @@ function railFix(root){
     const top=img.closest('.rl-s') ? 0 : 1;
     img.style.transform = top ? `translateY(${-Math.round(t*H)}px)` : `translateY(${Math.round(b*H)}px)`; }));
 }
-const outfitHTML = (items,prev) => (TRY_MODE==='rail'||TRY_MODE==='reel') ? railHTML(items,prev) : TRY_MODE==='ghost' ? ghostHTML(items) : boardHTML(items);
+/* ===== «Образ в полный рост» =====
+   Вещи стоят одной колонной, как на человеке: верх, под ним брюки, внизу обувь. Фото не растягиваются:
+   у каждой вещи свой примерный размер в жизни (в метрах), прозрачные края фото обрезаются. */
+const STK={ outerwear:{h:.76,w:1.0,z:3}, tops:{h:.70,w:.94,z:2}, bottoms:{h:1.02,w:.6,z:1}, shoes:{h:.15,w:.36,z:4}, accessory:{h:.26,w:.32,z:5} };
+const STK_GROUP={ outerwear:'up', tops:'up', bottoms:'lo', shoes:'sh' };
+const STK_BOX=new Map();
+function stkMeasure(img, full){                       // границы вещи на фото без прозрачных краёв, доли 0..1; a — пропорции вещи
+  const nw=img.naturalWidth||1, nh=img.naturalHeight||1, u=(img.currentSrc||img.src)+(full?'#f':'');
+  if(STK_BOX.has(u)) return STK_BOX.get(u);
+  let r={x0:0,y0:0,x1:1,y1:1,a:nw/nh};
+  if(!full) try{ const k=Math.min(1,160/Math.max(nw,nh)), w=Math.max(1,Math.round(nw*k)), h=Math.max(1,Math.round(nh*k));
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(img,0,0,w,h); const d=g.getImageData(0,0,w,h).data;
+    let x0=w,y0=h,x1=-1,y1=-1; for(let y=0;y<h;y++) for(let x=0;x<w;x++) if(d[(y*w+x)*4+3]>24){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+    if(x1>x0 && y1>y0){ r={x0:x0/w,y0:y0/h,x1:(x1+1)/w,y1:(y1+1)/h}; r.a=(r.x1-r.x0)*nw/((r.y1-r.y0)*nh); } }catch(e){}
+  STK_BOX.set(u,r); return r;
+}
+function stkBox(img, full){
+  return new Promise(res=>{ const done=()=>res(stkMeasure(img,full));
+    if(img.complete && img.naturalWidth) done(); else { img.addEventListener('load',done,{once:true}); img.addEventListener('error',()=>res({x0:0,y0:0,x1:1,y1:1,a:.8}),{once:true}); } });
+}
+/* места вещей в метрах: x — центр, y — верх. Футболка под курткой чуть меньше и видна у ворота,
+   пояс брюк уходит под низ верха, обувь стоит поверх низа штанин. Фото с фоном ставятся без нахлёста. */
+function stkLayout(list){
+  const by={}; list.forEach(o=>{ if(STK[o.layer] && !by[o.layer]) by[o.layer]=o; });
+  const size=o=>{ const d=STK[o.layer]; let h=d.h, w=h*o.a;
+    if(o.layer==='shoes'){ w=d.w; h=w/o.a; if(h>d.h*1.6){ h=d.h*1.6; w=h*o.a; } }
+    if(w>d.w){ w=d.w; h=w/o.a; } return {w,h}; };
+  const P={}, up=by.outerwear||by.tops; let upEnd=0, end=0;
+  if(up){ const s=size(up); P[up.layer]={...s,x:0,y:0}; upEnd=end=s.h;
+    if(by.outerwear && by.tops){ const t=size(by.tops), k=Math.min(.92, P.outerwear.w*.8/t.w); P.tops={w:t.w*k,h:t.h*k,x:0,y:-.02}; } }
+  if(by.bottoms){ const s=size(by.bottoms), ov = !up ? 0 : (up.ph||by.bottoms.ph) ? -.03 : Math.min(.17, upEnd*.24);
+    P.bottoms={...s,x:0,y:upEnd-ov}; end=P.bottoms.y+s.h; }
+  if(by.shoes){ const s=size(by.shoes), o=by.shoes;
+    const y = by.bottoms ? ((o.ph||by.bottoms.ph) ? end+.03 : end-s.h*.55) : up ? end+.12 : 0;
+    P.shoes={...s,x:0,y}; }
+  if(by.accessory){ const s=size(by.accessory), ref=P.outerwear||P.tops; P.accessory={...s, x: ref ? ref.w/2+s.w/2+.04 : 0, y: ref ? .02 : 0}; }
+  return P;
+}
+function stkBounds(P){ let a=1e9,b=-1e9,c=1e9,d=-1e9; Object.values(P).forEach(r=>{ a=Math.min(a,r.x-r.w/2); b=Math.max(b,r.x+r.w/2); c=Math.min(c,r.y); d=Math.max(d,r.y+r.h); }); return {x0:a,x1:b,y0:c,y1:d}; }
+const STK_VIRT={ tops:.82, bottoms:.42, shoes:2.4 };   // пустые места на «полке»: пропорции условной вещи
+function stackHTML(items, prev, ctrl){
+  const by={}; items.forEach(p=>{ if(STK[p.layer] && !by[p.layer]) by[p.layer]=p; });
+  const isNew = p => !prev || !prev.has(p.id);
+  let h=`<div class="stk${ctrl?' ctrl':''}">`+Object.values(by).map((p,i)=>`<figure class="stk-i ${p.boardCut?'cut':'ph'}${isNew(p)?' new':''}" data-l="${p.layer}" style="z-index:${STK[p.layer].z};--d:${i*70}ms"><img src="${esc(p.tryOn)}" alt="${esc(p.name)}" decoding="async"></figure>`).join('');
+  if(ctrl){
+    const arrow=d=>`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d<0?'M15 5l-7 7 7 7':'M9 5l7 7-7 7'}"/></svg>`;
+    REEL_ROWS.forEach(([g,t,none,ls])=>{ const n=PRODUCTS.filter(p=>p.tryOn && ls.includes(p.layer) && !soldOut(p)).length, dis=n?'':' disabled';
+      h+=`<div class="stk-v" data-g="${g}" hidden><span>${t}</span></div>
+        <button class="stk-a l" type="button" data-g="${g}" aria-label="${t}: предыдущая вещь" onclick="stkStep('${g}',-1)"${dis}>${arrow(-1)}</button>
+        <button class="stk-a r" type="button" data-g="${g}" aria-label="${t}: следующая вещь" onclick="stkStep('${g}',1)"${dis}>${arrow(1)}</button>`; });
+  }
+  return h+'</div>';
+}
+function stackFix(root){
+  if(!root) return;
+  const list = root.classList && root.classList.contains('stk') ? [root] : [...root.querySelectorAll('.stk')];
+  list.forEach(st=>{ const figs=[...st.querySelectorAll('.stk-i')];
+    Promise.all(figs.map(f=>stkBox(f.querySelector('img'), f.classList.contains('ph')))).then(bx=>{ if(!st.isConnected) return; st._bx=bx; stkPlace(st); });
+    if(!st._ro && window.ResizeObserver){ st._ro=new ResizeObserver(()=>{ if(st._bx) stkPlace(st); }); st._ro.observe(st); } });
+}
+function stkPlace(st){
+  const W=st.clientWidth, H=st.clientHeight; if(!W || !H || !st._bx) return;
+  const figs=[...st.querySelectorAll('.stk-i')], arrows=st.querySelector('.stk-a'), ctrl=!!(arrows && getComputedStyle(arrows).display!=='none');
+  const list=figs.map((f,i)=>({layer:f.dataset.l, a:st._bx[i].a, ph:f.classList.contains('ph'), f, b:st._bx[i]}));
+  const have=new Set(list.map(o=>STK_GROUP[o.layer]).filter(Boolean));
+  if(ctrl){ if(!have.has('up')) list.push({layer:'tops',a:STK_VIRT.tops,v:'up'}); if(!have.has('lo')) list.push({layer:'bottoms',a:STK_VIRT.bottoms,v:'lo'}); if(!have.has('sh')) list.push({layer:'shoes',a:STK_VIRT.shoes,v:'sh'}); }
+  if(!list.length) return;
+  const P=stkLayout(list), B=stkBounds(P), padX=ctrl?44:10, padY=Math.max(6,H*.04);
+  const k=Math.min((W-padX*2)/(B.x1-B.x0), (H-padY*2)/(B.y1-B.y0)), ox=W/2-k*(B.x0+B.x1)/2, oy=H/2-k*(B.y0+B.y1)/2;
+  const px=r=>({l:ox+(r.x-r.w/2)*k, t:oy+r.y*k, w:r.w*k, h:r.h*k});
+  list.forEach(o=>{ const r=P[o.layer]; if(!r) return; const q=px(r);
+    if(o.v){ const v=st.querySelector(`.stk-v[data-g="${o.v}"]`); if(v){ v.hidden=false; Object.assign(v.style,{left:q.l+'px',top:q.t+'px',width:q.w+'px',height:q.h+'px'}); } return; }
+    Object.assign(o.f.style,{left:q.l+'px',top:q.t+'px',width:q.w+'px',height:q.h+'px'});
+    const im=o.f.querySelector('img');
+    if(!o.ph){ const iw=q.w/(o.b.x1-o.b.x0), ih=q.h/(o.b.y1-o.b.y0); Object.assign(im.style,{width:iw+'px',height:ih+'px',left:(-o.b.x0*iw)+'px',top:(-o.b.y0*ih)+'px'}); }
+    o.f.classList.add('on'); });
+  st.querySelectorAll('.stk-v').forEach(v=>{ if(!list.some(o=>o.v===v.dataset.g)) v.hidden=true; });
+  // стрелки — на уровне своей вещи (или пустого места)
+  const mid={ up:P.outerwear||P.tops, lo:P.bottoms, sh:P.shoes };
+  st.querySelectorAll('.stk-a').forEach(a=>{ const r=mid[a.dataset.g]; a.hidden=!r; if(r) a.style.top=(oy+(r.y+r.h/2)*k)+'px'; });
+}
+function stkStep(g,d){
+  const ls=reelRow(g)[3], ids=['',...PRODUCTS.filter(p=>p.tryOn && ls.includes(p.layer) && !soldOut(p)).map(p=>p.id)];
+  const i=Math.max(0,ids.indexOf(reelSel(g))), id=ids[(i+d+ids.length)%ids.length];
+  ls.forEach(l=>frLook[l]=null);
+  if(id){ const p=frFind(id); frLook[p.layer]={id, size:firstSize(p)}; }
+  renderPanel(); renderShop();
+}
+function stkLucky(){
+  REEL_ROWS.forEach(([g,,,ls])=>{ const all=PRODUCTS.filter(p=>p.tryOn && ls.includes(p.layer) && !soldOut(p)); if(!all.length) return;
+    const cur=reelSel(g); let p; do{ p=all[Math.floor(Math.random()*all.length)]; }while(all.length>1 && p.id===cur);
+    ls.forEach(l=>frLook[l]=null); frLook[p.layer]={id:p.id, size:firstSize(p)}; });
+  renderPanel(); renderShop();
+}
+/* то же для обложки: рисуем колонну на холсте */
+function stkDraw(g,items,ims,X,Y,AW,AH){
+  const list=items.map((p,i)=>{ const im=ims[i]; if(!im || !STK[p.layer]) return null; const b=stkMeasure(im,!p.boardCut); return {layer:p.layer,a:b.a,ph:!p.boardCut,im,b}; }).filter(Boolean);
+  if(!list.length) return;
+  const P=stkLayout(list), B=stkBounds(P), k=Math.min(AW/(B.x1-B.x0), AH/(B.y1-B.y0)), ox=X+AW/2-k*(B.x0+B.x1)/2, oy=Y+AH/2-k*(B.y0+B.y1)/2;
+  const sp=g.createRadialGradient(X+AW/2,Y+AH*.48,20,X+AW/2,Y+AH*.48,AW*.62); sp.addColorStop(0,'rgba(150,160,180,.30)'); sp.addColorStop(1,'rgba(150,160,180,0)'); g.fillStyle=sp; g.fillRect(X-60,Y-40,AW+120,AH+80);   // светлое пятно за вещами, как в примерочной
+  list.sort((a,b)=>STK[a.layer].z-STK[b.layer].z).forEach(o=>{ const r=P[o.layer]; if(!r) return; const nw=o.im.naturalWidth, nh=o.im.naturalHeight;
+    const src=[o.b.x0*nw, o.b.y0*nh, (o.b.x1-o.b.x0)*nw, (o.b.y1-o.b.y0)*nh], dst=[ox+(r.x-r.w/2)*k, oy+r.y*k, r.w*k, r.h*k];
+    // вещь сначала на отдельный холст: рисунок-SVG с тенью и обрезкой краёв браузер иначе не рисует
+    const t=document.createElement('canvas'); t.width=Math.max(1,Math.round(dst[2])); t.height=Math.max(1,Math.round(dst[3])); const fw=t.width/(o.b.x1-o.b.x0), fh=t.height/(o.b.y1-o.b.y0); t.getContext('2d').drawImage(o.im,-o.b.x0*fw,-o.b.y0*fh,fw,fh);
+    g.save(); g.shadowColor='rgba(0,0,0,.5)'; g.shadowBlur=36; g.shadowOffsetY=18; g.drawImage(t,dst[0],dst[1],dst[2],dst[3]); g.restore();
+    if(!o.ph){ g.save(); g.shadowColor='rgba(226,232,242,.55)'; g.shadowBlur=5; g.drawImage(t,dst[0],dst[1],dst[2],dst[3]); g.restore(); } });   // светлый контур: тёмная вещь не сливается с фоном
+}
+const outfitHTML = (items,prev) => TRY_MODE==='stack' ? stackHTML(items,prev,false) : (TRY_MODE==='rail'||TRY_MODE==='reel') ? railHTML(items,prev) : TRY_MODE==='ghost' ? ghostHTML(items) : boardHTML(items);
 /* Накладываем слои примерки и характеристики на загруженные товары */
 function applyMeta(list){
   list.forEach(p=>{
@@ -3034,7 +3170,8 @@ function renderLooks(){
         <div class="lk-price">${eur(sum)}</div>
         <div class="lk-acts"><button class="btn solid" onclick="lookTry(${jsq(lk.id)})">Примерить</button><button class="btn" onclick="lookCart(${jsq(lk.id)})">В корзину</button></div>
       </div></article>`; }).join('') || '<div class="emptyd">Образов пока нет. Добавьте их в админке, вкладка «Образы».</div>';
-  if(TRY_MODE!=='board') L.forEach(({items},i)=>dress('lk'+i,items));
+  if(TRY_MODE==='stack') stackFix(g);
+  else if(TRY_MODE!=='board') L.forEach(({items},i)=>dress('lk'+i,items));
   lookNav();
 }
 function lookNav(){ const g=$('#lookGrid'), n=document.querySelector('.lk-nav'); if(g && n) n.style.visibility = g.scrollWidth>g.clientWidth+4 ? '' : 'hidden'; }
@@ -3782,6 +3919,15 @@ function renderBoard(){
   LAYERS.forEach(l=>{ const sel=frLook[l], p=sel&&frFind(sel.id); if(sel && (!p || !p.tryOn || p.layer!==l)) frLook[l]=null; });
   const look=currentLook(), items=look.map(sel=>frFind(sel.id)), b=$('#frBoard');
   if(TRY_MODE==='reel'){ reelBuild(b); reelSync(b); renderPicks(look); return; }
+  if(TRY_MODE==='stack'){
+    const key=items.map(p=>p.id).join(',')+'|'+REEL_ROWS.map(r=>PRODUCTS.filter(p=>p.tryOn && r[3].includes(p.layer) && !soldOut(p)).length).join();
+    if(b.dataset.k!==key){ const prev=new Set((b.dataset.k||'').split('|')[0].split(',').filter(Boolean)); b.dataset.k=key;
+      b.innerHTML=`<div class="stk-w">${stackHTML(items,prev,true)}<div class="rr-acts">
+        <button class="rr-b" type="button" onclick="stkLucky()"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/><circle cx="15" cy="9" r="1.2"/><circle cx="9" cy="15" r="1.2"/></svg>Мне повезёт</button>
+        <button class="rr-b" type="button" onclick="lookCover()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>Обложка</button></div></div>`;
+      stackFix(b); b.setAttribute('aria-label', items.length ? 'Ваш образ: '+items.map(p=>p.name).join(', ') : 'Ваш образ пока пуст'); }
+    renderPicks(look); return;
+  }
   const key=items.map(p=>p.id).join(',');
   if(b.dataset.k!==key){ const prev=new Set((b.dataset.k||'').split(',').filter(Boolean)); b.dataset.k=key; b.innerHTML=outfitHTML(items,prev); if(TRY_MODE==='rail') requestAnimationFrame(()=>railFix(b)); b.setAttribute('aria-label', items.length ? 'Ваш образ: '+items.map(p=>p.name).join(', ') : 'Образ пуст'); }
   $('#frHint').textContent='Нажмите на вешалку у товара, чтобы добавить его в образ';
@@ -3873,12 +4019,15 @@ function lookCover(){
     const sp=(t,px)=>{ if('letterSpacing' in g) g.letterSpacing=px+'px'; return t; };
     g.textAlign='center'; g.fillStyle=C.acc; g.font=`600 64px ${font}`; g.fillText(sp((STORE.name||'').toUpperCase(),14),W/2,160);
     g.fillStyle=C.text; g.font=`500 40px ${font}`; g.fillText(sp('МОЙ ОБРАЗ',10),W/2,226); sp('',0);
+    if(TRY_MODE==='stack') stkDraw(g,items,ims,90,280,900,1030);
+    else {
     // вещи: верх слева, второй верх справа, низ, обувь (как в раскладке), без растягивания
     const has={}; items.forEach((p,i)=>{ has[p.layer]={p,im:ims[i]}; });
     const S=boardSlots(Object.fromEntries(Object.entries(has).map(([l,x])=>[l,x.p]))), X=90,Y=290,AW=900,AH=1010;
     Object.entries(has).forEach(([l,{im}])=>{ const r=S[l]; if(!r||!im) return;
       const bx=X+r[0]/100*AW, by=Y+r[1]/100*AH, bw=r[2]/100*AW, bh=r[3]/100*AH, k=Math.min(bw/im.naturalWidth,bh/im.naturalHeight), w=im.naturalWidth*k, h=im.naturalHeight*k;
       g.save(); g.shadowColor='rgba(0,0,0,.45)'; g.shadowBlur=36; g.shadowOffsetY=18; g.drawImage(im,bx+(bw-w)/2,by+(bh-h)/2,w,h); g.restore(); });
+    }
     // список вещей и итог
     let y=1390; g.textAlign='left'; const total=items.reduce((t,p)=>t+(+p.price||0),0);
     g.fillStyle=C.acc; g.fillRect(90,y-44,900,2);
